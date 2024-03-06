@@ -5,6 +5,17 @@ pub struct ASTNode {
     right_child: TOKEN,
 }
 
+impl std::fmt::Display for ASTNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        loop {
+            let left_child: ASTNode = self.left_child;
+            let right_child: ASTNode = self.right_child;
+
+            if () {}
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum RETURNABLE {
     STRING(String),
@@ -25,11 +36,11 @@ pub enum TOKEN {
 impl TOKEN {
     fn as_string(&self) -> String {
         match self {
-            TOKEN::PRINT => String::from("PRINT"),
+            TOKEN::PRINT => "PRINT".to_owned(),
             TOKEN::STRING(strung) => format!("STRING({})", strung),
-            TOKEN::FUNCTION => String::from("FUNCTION"),
-            TOKEN::RPAREN => String::from("RPAREN"),
-            TOKEN::LPAREN => String::from("LPAREN"),
+            TOKEN::FUNCTION => "FUNCTION".to_owned(),
+            TOKEN::RPAREN => "RPAREN".to_owned(),
+            TOKEN::LPAREN => "LPAREN".to_owned(),
             TOKEN::RETURN(returnable) => format!("RETURN({:?})", returnable),
         }
     }
