@@ -1,4 +1,4 @@
-use crate::primitives::{RETURNABLE, TOKEN};
+use crate::primitives::{TOKEN};
 
 pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
     let mut read_buffer: Vec<&str> = Vec::new(); // Maximal munch
