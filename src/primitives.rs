@@ -10,8 +10,6 @@ impl std::fmt::Display for ASTNode {
         loop {
             let left_child: ASTNode = self.left_child;
             let right_child: ASTNode = self.right_child;
-
-            if () {}
         }
     }
 }
