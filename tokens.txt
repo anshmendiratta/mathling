@@ -1,0 +1,2 @@
+PRINT
+STRING(Hello world)
