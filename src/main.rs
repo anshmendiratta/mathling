@@ -1,5 +1,5 @@
 use make_lang::lexer::tokenize;
-use make_lang::primitives::TOKEN;
+use make_lang::primitives::{ASTNode, TOKEN};
 use make_lang::traits::Stringify;
 
 use std::{fs::File, io::Read, io::Write};

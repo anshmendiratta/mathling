@@ -1,4 +1,4 @@
-use crate::primitives::TOKEN;
+use crate::primitives::{ASTNode, TOKEN};
 
 pub trait Stringify {
     fn as_string(&self) -> Vec<String>;
@@ -21,5 +21,49 @@ impl Stringify for Vec<TOKEN> {
         }
 
         string_tokens
+    }
+}
+
+impl std::fmt::Display for ASTNode {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let left_child: TOKEN = self.left_child.clone();
+        let mut right_child: Option<Box<ASTNode>> = self.next_node.clone();
+
+        loop {
+            match right_child.clone() {
+                Some(further_node) => {
+                    println!(
+                        "{}\n | \t \\ \t  {} \t {}",
+                        left_child.as_string(),
+                        further_node.left_child.as_string(),
+                        *further_node
+                    );
+                    right_child = Some(further_node.clone());
+                }
+                _ => break,
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn print_ast_nodes() {
+        let child_node: ASTNode = ASTNode {
+            left_child: TOKEN::PRINT,
+            next_node: None,
+        };
+
+        let node1: ASTNode = ASTNode {
+            left_child: TOKEN::PRINT,
+            next_node: Some(Box::new(child_node)),
+        };
+
+        println!("{}", node1);
     }
 }

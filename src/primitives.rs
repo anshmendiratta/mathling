@@ -1,27 +1,19 @@
-#[derive(Debug)]
+/// `left_child`: `TOKEN`
+/// `right_child`: equals `next_node` that is a recursive
+#[derive(Debug, Clone)]
 pub struct ASTNode {
-    next_node: Box<ASTNode>,
-    left_child: TOKEN,
-    right_child: TOKEN,
+    pub left_child: TOKEN,
+    pub next_node: Option<Box<ASTNode>>,
 }
 
-impl std::fmt::Display for ASTNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        loop {
-            let left_child: ASTNode = self.left_child;
-            let right_child: ASTNode = self.right_child;
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RETURNABLE {
     STRING(String),
     UINT(usize),
     IINT(isize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TOKEN {
     PRINT,
     STRING(String),
@@ -32,7 +24,7 @@ pub enum TOKEN {
 }
 
 impl TOKEN {
-    fn as_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         match self {
             TOKEN::PRINT => "PRINT".to_owned(),
             TOKEN::STRING(strung) => format!("STRING({})", strung),
