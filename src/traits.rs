@@ -1,69 +1,33 @@
-use crate::primitives::{ASTNode, TOKEN};
+use crate::primitives::{TOKEN, TOKENTYPE};
 
 pub trait Stringify {
-    fn as_string(&self) -> Vec<String>;
+    fn as_string(&self) -> String;
 }
 
-impl Stringify for Vec<TOKEN> {
-    fn as_string(&self) -> Vec<String> {
-        let mut string_tokens: Vec<String> = Vec::new();
-        for token in self {
-            match token {
-                TOKEN::PRINT => string_tokens.push(String::from("PRINT")),
-                TOKEN::STRING(strung) => string_tokens.push(format!("STRING({})", strung)),
-                TOKEN::FUNCTION => string_tokens.push(String::from("FUNCTION")),
-                TOKEN::RPAREN => string_tokens.push(String::from("RPAREN")),
-                TOKEN::LPAREN => string_tokens.push(String::from("LPAREN")),
-                TOKEN::RETURN(returnable) => {
-                    string_tokens.push(format!("RETURN({:?})", returnable))
-                }
-            }
+impl Stringify for TOKEN {
+    fn as_string(&self) -> String {
+        match self.kind {
+            TOKENTYPE::PRINT => String::from("PRINT"),
+            TOKENTYPE::STRING => format!("STRING({:?})", self.value.clone().unwrap()),
+            TOKENTYPE::FUNCTION => String::from("FUNCTION"),
+            TOKENTYPE::RPAREN => String::from("RPAREN"),
+            TOKENTYPE::LPAREN => String::from("LPAREN"),
+            TOKENTYPE::RETURN => format!("RETURN({:?})", self.value.clone().unwrap()),
+            TOKENTYPE::NULL => String::from("NULL"),
         }
-
-        string_tokens
     }
 }
 
-impl std::fmt::Display for ASTNode {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let left_child: TOKEN = self.left_child.clone();
-        let mut right_child: Option<Box<ASTNode>> = self.next_node.clone();
-
-        loop {
-            match right_child.clone() {
-                Some(further_node) => {
-                    println!(
-                        "{}\n | \t \\ \t  {} \t {}",
-                        left_child.as_string(),
-                        further_node.left_child.as_string(),
-                        *further_node
-                    );
-                    right_child = Some(further_node.clone());
-                }
-                _ => break,
-            }
+impl From<String> for TOKEN {
+    fn from(val: String) -> Self {
+        match &val[..] {
+            "PRINT" => TOKENTYPE::PRINT.into(),
+            "STRING" => TOKENTYPE::STRING.into(),
+            "FUNCTION" => TOKENTYPE::FUNCTION.into(),
+            "RPAREN" => TOKENTYPE::RPAREN.into(),
+            "RLAREN" => TOKENTYPE::LPAREN.into(),
+            "RETURN" => TOKENTYPE::RETURN.into(),
+            _ => TOKENTYPE::NULL.into(),
         }
-
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn print_ast_nodes() {
-        let child_node: ASTNode = ASTNode {
-            left_child: TOKEN::PRINT,
-            next_node: None,
-        };
-
-        let node1: ASTNode = ASTNode {
-            left_child: TOKEN::PRINT,
-            next_node: Some(Box::new(child_node)),
-        };
-
-        println!("{}", node1);
     }
 }

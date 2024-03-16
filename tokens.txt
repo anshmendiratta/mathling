@@ -1,2 +1,2 @@
 PRINT
-STRING(Hello world)
+STRING("Hello world")
