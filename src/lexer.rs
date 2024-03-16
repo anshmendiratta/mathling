@@ -76,7 +76,6 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                     kind: TOKENTYPE::STRING,
                     value: Some(token_value),
                 };
-                dbg!(&token);
 
                 Some(token)
             }

@@ -9,7 +9,7 @@ fn make_syntax_tree(token_sequence: Vec<TOKEN>) -> std::io::Result<()> {
     dbg!(&token_sequence);
 
     let root_node: TOKEN = tokens_sequence[0].clone();
-    let mut all_nodes: Vec<ASTNode> = Vec::new();
+    let _all_nodes: Vec<ASTNode> = Vec::new();
 
     dbg!(&root_node);
     Ok(())
