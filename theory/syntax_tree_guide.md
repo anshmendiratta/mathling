@@ -7,6 +7,6 @@ should convert to
 ```
         print
        /     \
-    stdout  "Hello"
+    stdout  "Hello
              World"
 ```

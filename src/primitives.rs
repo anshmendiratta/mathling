@@ -49,11 +49,7 @@ impl From<TOKENTYPE> for TOKEN {
         let self_default_value = match &value {
             TOKENTYPE::PRINT => Some(REPDATA::STRING("".to_string())),
             TOKENTYPE::STRING => Some(REPDATA::STRING("".to_string())),
-            TOKENTYPE::FUNCTION => None,
-            TOKENTYPE::RPAREN => None,
-            TOKENTYPE::LPAREN => None,
-            TOKENTYPE::RETURN => None,
-            TOKENTYPE::NULL => None,
+            _ => None
         };
 
         TOKEN {
