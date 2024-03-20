@@ -1,2 +1,2 @@
 PRINT
-STRING("Hello world")
+Some(STRING("Hello world"))

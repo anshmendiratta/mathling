@@ -5,7 +5,8 @@ pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
     let mut tokens: Vec<TOKEN> = Vec::new();
     let paren_scope: usize = 0;
 
-    let parse_string_lines = parse_string.split('(');
+    // let parse_string_lines: Vec<&str> = parse_string.split('\n');
+    let parse_string_scopes = parse_string.split('(');
 
     for character in parse_string.chars() {
         if character == '(' {
@@ -15,7 +16,7 @@ pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
         }
     }
 
-    for line in parse_string_lines {
+    for line in parse_string_scopes {
         for keyword in line.split(')') {
             read_buffer.push(keyword.trim());
         }
@@ -34,7 +35,6 @@ pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
     }
 
     // dbg!(paren_scope);
-
     tokens
 }
 
@@ -46,14 +46,15 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
         ")" => Some(TOKENTYPE::RPAREN.into()),
         _ => match read_from_source {
             true => {
-                let try_to_stringify: String = token_buffer_as_string.replace('\'', "");
-                if try_to_stringify.len() < 2
-                    || try_to_stringify.len() != token_buffer_as_string.len() - 2
-                {
+                let starts_with_apos: bool = token_buffer_as_string.starts_with('\'');
+                let ends_with_apos: bool = token_buffer_as_string.ends_with('\'');
+                if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
                     return None;
                 }
-
-                let token_value: REPDATA = REPDATA::STRING(try_to_stringify);
+                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
+                let token_value: REPDATA = REPDATA::STRING(
+                    token_buffer_as_string[1..string_close_paren_index].to_string(),
+                );
                 let token: TOKEN = TOKEN {
                     kind: TOKENTYPE::STRING,
                     value: Some(token_value),
@@ -62,16 +63,16 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                 Some(token)
             }
             false => {
-                let try_to_stringify: String = token_buffer_as_string.replace('\"', "");
-                if try_to_stringify.len() <= 5
-                    || try_to_stringify.len() != token_buffer_as_string.len() - 2
-                {
+                dbg!(&token_buffer_as_string);
+                let starts_with_apos: bool = token_buffer_as_string.starts_with('"');
+                let ends_with_apos: bool = token_buffer_as_string.ends_with('"');
+                if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
                     return None;
                 }
-
-                let string_length: usize = try_to_stringify.len();
-                let just_string: String = token_buffer_as_string[8..=string_length - 1].to_string();
-                let token_value: REPDATA = REPDATA::STRING(just_string);
+                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
+                let token_value: REPDATA = REPDATA::STRING(
+                    token_buffer_as_string[1..string_close_paren_index].to_string(),
+                );
                 let token: TOKEN = TOKEN {
                     kind: TOKENTYPE::STRING,
                     value: Some(token_value),
@@ -80,5 +81,24 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                 Some(token)
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{lexer::match_token_buffer, primitives::TOKENTYPE};
+
+    #[test]
+    fn check_token_buffer_match() {
+        let test_1: Vec<char> = "print".chars().collect::<Vec<char>>();
+        let test_2: Vec<char> = "1".chars().collect::<Vec<char>>();
+        let test_3: Vec<char> = r#""hello world""#.chars().collect::<Vec<char>>();
+
+        assert_eq!(
+            Some(TOKENTYPE::PRINT.into()),
+            match_token_buffer(test_1, true)
+        );
+        // assert_eq!();
+        // assert_eq!();
     }
 }

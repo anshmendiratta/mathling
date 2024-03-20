@@ -4,18 +4,31 @@ use crate::{
 };
 
 /// returns a `std::io::Result<Box<ASTNode>>`
-fn make_syntax_tree(token_sequence: Vec<TOKEN>) -> std::io::Result<()> {
-    let tokens_sequence: Vec<TOKEN> = pair_tokens(read_tokens_sequence()?);
-    dbg!(&token_sequence);
+pub fn make_syntax_tree(token_sequence: Vec<TOKEN>) -> std::io::Result<ASTNode> {
+    let root_node: ASTNode = ASTNode {
+        left_child: token_sequence[0].clone(),
+        next_node: None,
+    };
 
-    let root_node: TOKEN = tokens_sequence[0].clone();
-    let _all_nodes: Vec<ASTNode> = Vec::new();
+    let number_of_tokens: usize = token_sequence.len();
+    (0..=number_of_tokens - 1).for_each(|token_idx| {
+        if token_idx < number_of_tokens - 1 {
+            let mut most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
+            while most_recent_next_node.is_some() {
+                most_recent_next_node = most_recent_next_node.clone().unwrap().next_node;
+            }
 
-    dbg!(&root_node);
-    Ok(())
+            most_recent_next_node.unwrap().next_node = Some(Box::new(ASTNode {
+                left_child: token_sequence[token_idx].clone(),
+                next_node: None,
+            }))
+        }
+    });
+
+    Ok(root_node)
 }
 
-pub fn read_tokens_sequence() -> std::io::Result<Vec<TOKEN>> {
+pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<TOKEN>> {
     let token_sequence_from_file = std::fs::read_to_string("tokens.txt")?;
     let tokens_sequence_as_buffers: Vec<Vec<char>> = token_sequence_from_file
         .split('\n')
@@ -29,7 +42,6 @@ pub fn read_tokens_sequence() -> std::io::Result<Vec<TOKEN>> {
         }
     }
 
-    dbg!(&tokens_sequence);
     Ok(tokens_sequence)
 }
 

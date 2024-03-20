@@ -6,13 +6,13 @@ pub struct ASTNode {
     pub next_node: Option<Box<ASTNode>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TOKEN {
     pub kind: TOKENTYPE,
     pub value: Option<REPDATA>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TOKENTYPE {
     PRINT,
     STRING,
@@ -23,7 +23,7 @@ pub enum TOKENTYPE {
     NULL,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum REPDATA {
     STRING(String),
     UINT(usize),
@@ -31,12 +31,6 @@ pub enum REPDATA {
 }
 
 impl TOKEN {
-    pub fn from(object: (TOKENTYPE, REPDATA)) -> Self {
-        Self {
-            kind: object.0,
-            value: Some(object.1),
-        }
-    }
     pub fn as_string(&self) -> String {
         match self.kind {
             TOKENTYPE::PRINT => "PRINT".to_owned(),

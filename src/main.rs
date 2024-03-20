@@ -1,5 +1,7 @@
-use make_lang::parser::read_tokens_sequence;
+use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source};
+use make_lang::primitives::ASTNode;
 use make_lang::primitives::TOKEN;
+use make_lang::traits::OptionStringify;
 use make_lang::{lexer::tokenize, parser::pair_tokens};
 
 use std::{fs::File, io::Read, io::Write};
@@ -18,24 +20,26 @@ fn main() -> std::io::Result<()> {
     let tokens_as_vec_string: Vec<String> = tokens
         .iter()
         .map(|token| {
+            dbg!(&token.as_string());
             // Removes `Some(..)` to become `..`
-            if token.as_string().replace("Some(", "") != token.as_string() {
-                let token_string_length = token.as_string().len();
-                return token.as_string()[5..=token_string_length - 2].to_string();
-            }
-
             token.as_string()
-            // format!("{:?}", token)
         })
         .collect();
 
+    dbg!(&tokens_as_vec_string);
     let tokens_as_string = tokens_as_vec_string.join("\n");
 
     let mut tokens_file: File = File::create("tokens.txt")?;
     let _ = tokens_file.write_all(tokens_as_string.as_bytes());
 
-    let tokens: Vec<TOKEN> = pair_tokens(read_tokens_sequence()?);
-    dbg!(tokens);
+    let tokens: Vec<TOKEN> = pair_tokens(read_tokens_sequence_of_source()?);
+    dbg!(&tokens);
+
+    let mut root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens).unwrap();
+    while root_node_of_syntax_tree.next_node.is_some() {
+        dbg!(&root_node_of_syntax_tree.next_node);
+        root_node_of_syntax_tree = *root_node_of_syntax_tree.next_node.unwrap();
+    }
 
     Ok(())
 }
