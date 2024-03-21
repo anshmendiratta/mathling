@@ -1,6 +1,6 @@
 use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source};
-use make_lang::primitives::ASTNode;
 use make_lang::primitives::TOKEN;
+use make_lang::primitives::{ASTNode, TOKENTYPE};
 use make_lang::traits::OptionStringify;
 use make_lang::{lexer::tokenize, parser::pair_tokens};
 
@@ -20,9 +20,12 @@ fn main() -> std::io::Result<()> {
     let tokens_as_vec_string: Vec<String> = tokens
         .iter()
         .map(|token| {
-            dbg!(&token.as_string());
             // Removes `Some(..)` to become `..`
-            token.as_string()
+            if token.kind == TOKENTYPE::STRING {
+                token.value.option_as_string()
+            } else {
+                token.as_string()
+            }
         })
         .collect();
 

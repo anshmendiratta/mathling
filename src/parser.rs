@@ -34,10 +34,12 @@ pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<TOKEN>> {
         .split('\n')
         .map(|c| c.to_lowercase().chars().collect())
         .collect();
+    // dbg!(&tokens_sequence_as_buffers);
     let mut tokens_sequence: Vec<TOKEN> = Vec::new();
 
     for token_buffer in tokens_sequence_as_buffers {
         if let Some(matched_token) = match_token_buffer(token_buffer, false) {
+            dbg!(&matched_token);
             tokens_sequence.push(matched_token);
         }
     }

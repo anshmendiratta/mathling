@@ -53,8 +53,10 @@ where
 
         let formatted_string: String = format!("{:?}", self);
         let maybe_extracted_string: String = formatted_string
-            .trim_start_matches("Some(")
-            .trim_end_matches(')')
+            .strip_prefix("Some(")
+            .expect("String empty?")
+            .strip_suffix(')')
+            .expect("Second string empty?")
             .to_string();
 
         if maybe_extracted_string.starts_with('"') && maybe_extracted_string.ends_with('"') {
