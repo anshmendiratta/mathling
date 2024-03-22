@@ -29,18 +29,16 @@ fn main() -> std::io::Result<()> {
         })
         .collect();
 
-    dbg!(&tokens_as_vec_string);
     let tokens_as_string = tokens_as_vec_string.join("\n");
 
     let mut tokens_file: File = File::create("tokens.txt")?;
     let _ = tokens_file.write_all(tokens_as_string.as_bytes());
 
     let tokens: Vec<TOKEN> = pair_tokens(read_tokens_sequence_of_source()?);
-    dbg!(&tokens);
 
     let mut root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens).unwrap();
     while root_node_of_syntax_tree.next_node.is_some() {
-        dbg!(&root_node_of_syntax_tree.next_node);
+        dbg!(&root_node_of_syntax_tree);
         root_node_of_syntax_tree = *root_node_of_syntax_tree.next_node.unwrap();
     }
 

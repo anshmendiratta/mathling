@@ -48,9 +48,11 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
             true => {
                 let starts_with_apos: bool = token_buffer_as_string.starts_with('\'');
                 let ends_with_apos: bool = token_buffer_as_string.ends_with('\'');
+
                 if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
                     return None;
                 }
+
                 let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
                 let token_value: REPDATA = REPDATA::STRING(
                     token_buffer_as_string[1..string_close_paren_index].to_string(),
@@ -63,7 +65,6 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                 Some(token)
             }
             false => {
-                dbg!(&token_buffer_as_string[7..]);
                 let starts_with_apos: bool = token_buffer_as_string[7..].starts_with('"');
                 let ends_with_apos: bool = {
                     let string_length = token_buffer_as_string.len();
@@ -71,13 +72,12 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                         token_buffer_as_string.chars().collect::<Vec<char>>()[string_length - 2];
                     second_last_character == '"'
                 };
-                dbg!(&starts_with_apos, ends_with_apos);
+
                 if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
                     return None;
                 }
-                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
-                dbg!(&token_buffer_as_string[7..string_close_paren_index].to_string());
 
+                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
                 let token_value: REPDATA = REPDATA::STRING(
                     token_buffer_as_string[8..string_close_paren_index - 1].to_string(),
                 );

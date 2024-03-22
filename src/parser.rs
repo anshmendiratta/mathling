@@ -39,7 +39,6 @@ pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<TOKEN>> {
 
     for token_buffer in tokens_sequence_as_buffers {
         if let Some(matched_token) = match_token_buffer(token_buffer, false) {
-            dbg!(&matched_token);
             tokens_sequence.push(matched_token);
         }
     }
