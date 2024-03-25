@@ -1,10 +1,10 @@
 use crate::{
     lexer::match_token_buffer,
-    primitives::{ASTNode, TOKEN, TOKENTYPE},
+    primitives::{ASTNode, Token, TokenType},
 };
 
 /// returns a `std::io::Result<Box<ASTNode>>`
-pub fn make_syntax_tree(token_sequence: Vec<TOKEN>) -> std::io::Result<ASTNode> {
+pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> {
     let root_node: ASTNode = ASTNode {
         left_child: token_sequence[0].clone(),
         next_node: None,
@@ -28,14 +28,14 @@ pub fn make_syntax_tree(token_sequence: Vec<TOKEN>) -> std::io::Result<ASTNode> 
     Ok(root_node)
 }
 
-pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<TOKEN>> {
+pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
     let token_sequence_from_file = std::fs::read_to_string("tokens.txt")?;
     let tokens_sequence_as_buffers: Vec<Vec<char>> = token_sequence_from_file
         .split('\n')
         .map(|c| c.to_lowercase().chars().collect())
         .collect();
     // dbg!(&tokens_sequence_as_buffers);
-    let mut tokens_sequence: Vec<TOKEN> = Vec::new();
+    let mut tokens_sequence: Vec<Token> = Vec::new();
 
     for token_buffer in tokens_sequence_as_buffers {
         if let Some(matched_token) = match_token_buffer(token_buffer, false) {
@@ -46,17 +46,17 @@ pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<TOKEN>> {
     Ok(tokens_sequence)
 }
 
-pub fn pair_tokens(token_sequence: Vec<TOKEN>) -> Vec<TOKEN> {
-    let mut paired_tokens: Vec<TOKEN> = Vec::new();
+pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
+    let mut paired_tokens: Vec<Token> = Vec::new();
 
     for (idx, token) in token_sequence.iter().enumerate() {
         match token_sequence[idx].kind {
-            TOKENTYPE::PRINT | TOKENTYPE::STRING | TOKENTYPE::RETURN => {
+            TokenType::PRINT | TokenType::STRING | TokenType::RETURN => {
                 if idx >= token_sequence.len() - 1 {
                     continue;
                 }
                 let next_token = token_sequence[idx + 1].clone();
-                paired_tokens.push(TOKEN {
+                paired_tokens.push(Token {
                     kind: token_sequence[idx].clone().kind,
                     value: next_token.value,
                 });

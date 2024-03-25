@@ -1,8 +1,8 @@
-use crate::primitives::{REPDATA, TOKEN, TOKENTYPE};
+use crate::primitives::{RepData, Token, TokenType};
 
-pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
+pub fn tokenize(parse_string: String) -> Vec<Token> {
     let mut read_buffer: Vec<&str> = Vec::new(); // Maximal munch
-    let mut tokens: Vec<TOKEN> = Vec::new();
+    let mut tokens: Vec<Token> = Vec::new();
     let paren_scope: usize = 0;
 
     // let parse_string_lines: Vec<&str> = parse_string.split('\n');
@@ -38,57 +38,38 @@ pub fn tokenize(parse_string: String) -> Vec<TOKEN> {
     tokens
 }
 
-pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Option<TOKEN> {
+pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Option<Token> {
     let token_buffer_as_string: &str = &token_buffer.iter().collect::<String>();
     match token_buffer_as_string {
-        "print" => Some(TOKENTYPE::PRINT.into()),
-        "(" => Some(TOKENTYPE::LPAREN.into()),
-        ")" => Some(TOKENTYPE::RPAREN.into()),
-        _ => match read_from_source {
-            true => {
-                let starts_with_apos: bool = token_buffer_as_string.starts_with('\'');
-                let ends_with_apos: bool = token_buffer_as_string.ends_with('\'');
+        "print" => Some(TokenType::PRINT.into()),
+        "(" => Some(TokenType::LPAREN.into()),
+        ")" => Some(TokenType::RPAREN.into()),
+        _ => {
+            let delimiter: char = match read_from_source {
+                true => '\'',
+                false => '"',
+            };
 
-                if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
-                    return None;
-                }
+            let apostrophe_matches: Vec<_> =
+                token_buffer_as_string.match_indices(delimiter).collect();
 
-                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
-                let token_value: REPDATA = REPDATA::STRING(
-                    token_buffer_as_string[1..string_close_paren_index].to_string(),
-                );
-                let token: TOKEN = TOKEN {
-                    kind: TOKENTYPE::STRING,
-                    value: Some(token_value),
-                };
-
-                Some(token)
+            if apostrophe_matches.len() != 2 {
+                return None;
             }
-            false => {
-                let starts_with_apos: bool = token_buffer_as_string[7..].starts_with('"');
-                let ends_with_apos: bool = {
-                    let string_length = token_buffer_as_string.len();
-                    let second_last_character =
-                        token_buffer_as_string.chars().collect::<Vec<char>>()[string_length - 2];
-                    second_last_character == '"'
-                };
 
-                if !(starts_with_apos && ends_with_apos && token_buffer_as_string.len() >= 2) {
-                    return None;
-                }
+            let first_match_index = apostrophe_matches[0].0;
+            let second_match_index = apostrophe_matches[1].0;
 
-                let string_close_paren_index: usize = token_buffer_as_string.len() - 1;
-                let token_value: REPDATA = REPDATA::STRING(
-                    token_buffer_as_string[8..string_close_paren_index - 1].to_string(),
-                );
-                let token: TOKEN = TOKEN {
-                    kind: TOKENTYPE::STRING,
-                    value: Some(token_value),
-                };
+            let token_value: RepData = RepData::STRING(
+                token_buffer_as_string[first_match_index..second_match_index].to_string(),
+            );
+            let token: Token = Token {
+                kind: TokenType::STRING,
+                value: Some(token_value),
+            };
 
-                Some(token)
-            }
-        },
+            Some(token)
+        }
     }
 }
 
@@ -96,35 +77,37 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
 mod tests {
     use crate::{
         lexer::match_token_buffer,
-        primitives::{REPDATA, TOKEN, TOKENTYPE},
+        primitives::{RepData, Token, TokenType},
     };
 
     #[test]
     fn check_token_buffer_match() {
         let test_1: Vec<char> = "print".chars().collect::<Vec<char>>();
+        // TODO: Setup test 2
         // let test_2: Vec<char> = "1".chars().collect::<Vec<char>>();
         let test_3: Vec<char> = "'hello world'".chars().collect::<Vec<char>>();
         let test_4: Vec<char> = r#"STRING("hello world")"#.chars().collect::<Vec<char>>();
 
         assert_eq!(
-            Some(TOKENTYPE::PRINT.into()),
+            Some(TokenType::PRINT.into()),
             match_token_buffer(test_1, true)
         );
+        // NOTE: Test 2
         // assert_eq!(
         //     Some(TOKENTYPE::PRINT.into()),
-        //     match_token_buffer(test_1, true)
+        //     match_token_buffer(test_2, true)
         // );
         assert_eq!(
-            Some(TOKEN {
-                kind: TOKENTYPE::STRING,
-                value: Some(REPDATA::STRING("hello world".to_string()))
+            Some(Token {
+                kind: TokenType::STRING,
+                value: Some(RepData::STRING("hello world".to_string()))
             }),
             match_token_buffer(test_3, true)
         );
         assert_eq!(
-            Some(TOKEN {
-                kind: TOKENTYPE::STRING,
-                value: Some(REPDATA::STRING("hello world".to_string()))
+            Some(Token {
+                kind: TokenType::STRING,
+                value: Some(RepData::STRING("hello world".to_string()))
             }),
             match_token_buffer(test_4, false)
         );

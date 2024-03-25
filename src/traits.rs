@@ -1,4 +1,4 @@
-use crate::primitives::{TOKEN, TOKENTYPE};
+use crate::primitives::{Token, TokenType};
 
 pub trait Stringify<T>
 where
@@ -7,30 +7,30 @@ where
     fn as_string(&self) -> String;
 }
 
-impl Stringify<TOKEN> for TOKEN {
+impl Stringify<Token> for Token {
     fn as_string(&self) -> String {
         match self.kind {
-            TOKENTYPE::PRINT => String::from("PRINT"),
-            TOKENTYPE::STRING => format!("STRING({:?})", self.value.clone().unwrap()),
-            TOKENTYPE::FUNCTION => String::from("FUNCTION"),
-            TOKENTYPE::RPAREN => String::from("RPAREN"),
-            TOKENTYPE::LPAREN => String::from("LPAREN"),
-            TOKENTYPE::RETURN => format!("RETURN({:?})", self.value.clone().unwrap()),
-            TOKENTYPE::NULL => String::from("NULL"),
+            TokenType::PRINT => String::from("PRINT"),
+            TokenType::STRING => format!("STRING({:?})", self.value.clone().unwrap()),
+            TokenType::FUNCTION => String::from("FUNCTION"),
+            TokenType::RPAREN => String::from("RPAREN"),
+            TokenType::LPAREN => String::from("LPAREN"),
+            TokenType::RETURN => format!("RETURN({:?})", self.value.clone().unwrap()),
+            TokenType::NULL => String::from("NULL"),
         }
     }
 }
 
-impl From<String> for TOKEN {
+impl From<String> for Token {
     fn from(val: String) -> Self {
         match &val[..] {
-            "PRINT" => TOKENTYPE::PRINT.into(),
-            "STRING" => TOKENTYPE::STRING.into(),
-            "FUNCTION" => TOKENTYPE::FUNCTION.into(),
-            "RPAREN" => TOKENTYPE::RPAREN.into(),
-            "RLAREN" => TOKENTYPE::LPAREN.into(),
-            "RETURN" => TOKENTYPE::RETURN.into(),
-            _ => TOKENTYPE::NULL.into(),
+            "PRINT" => TokenType::PRINT.into(),
+            "STRING" => TokenType::STRING.into(),
+            "FUNCTION" => TokenType::FUNCTION.into(),
+            "RPAREN" => TokenType::RPAREN.into(),
+            "RLAREN" => TokenType::LPAREN.into(),
+            "RETURN" => TokenType::RETURN.into(),
+            _ => TokenType::NULL.into(),
         }
     }
 }
@@ -70,7 +70,7 @@ where
 #[cfg(test)]
 mod test {
     use crate::{
-        primitives::{TOKEN, TOKENTYPE},
+        primitives::{Token, TokenType},
         traits::OptionStringify,
     };
 
@@ -87,9 +87,9 @@ mod test {
 
     #[test]
     fn check_token_as_string() {
-        let check_1: TOKEN = TOKENTYPE::PRINT.into();
-        let check_2: TOKEN = TOKENTYPE::RPAREN.into();
-        let check_3: TOKEN = TOKENTYPE::STRING.into();
+        let check_1: Token = TokenType::PRINT.into();
+        let check_2: Token = TokenType::RPAREN.into();
+        let check_3: Token = TokenType::STRING.into();
 
         assert_eq!(r#"PRINT"#, check_1.as_string());
         assert_eq!("RPAREN", check_2.as_string());

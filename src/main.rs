@@ -1,6 +1,6 @@
 use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source};
-use make_lang::primitives::TOKEN;
-use make_lang::primitives::{ASTNode, TOKENTYPE};
+use make_lang::primitives::Token;
+use make_lang::primitives::{ASTNode, TokenType};
 use make_lang::traits::OptionStringify;
 use make_lang::{lexer::tokenize, parser::pair_tokens};
 
@@ -15,13 +15,13 @@ fn main() -> std::io::Result<()> {
         contents
     };
 
-    let tokens: Vec<TOKEN> = tokenize(language_file_contents);
+    let tokens: Vec<Token> = tokenize(language_file_contents);
 
     let tokens_as_vec_string: Vec<String> = tokens
         .iter()
         .map(|token| {
             // Removes `Some(..)` to become `..`
-            if token.kind == TOKENTYPE::STRING {
+            if token.kind == TokenType::STRING {
                 token.value.option_as_string()
             } else {
                 token.as_string()
@@ -34,7 +34,7 @@ fn main() -> std::io::Result<()> {
     let mut tokens_file: File = File::create("tokens.txt")?;
     let _ = tokens_file.write_all(tokens_as_string.as_bytes());
 
-    let tokens: Vec<TOKEN> = pair_tokens(read_tokens_sequence_of_source()?);
+    let tokens: Vec<Token> = pair_tokens(read_tokens_sequence_of_source()?);
 
     let mut root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens).unwrap();
     while root_node_of_syntax_tree.next_node.is_some() {
