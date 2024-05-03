@@ -15,10 +15,11 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
         if token_idx < number_of_tokens - 1 {
             let mut most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
             while most_recent_next_node.is_some() {
-                most_recent_next_node = most_recent_next_node.clone().unwrap().next_node;
+                dbg!(&most_recent_next_node);
+                most_recent_next_node = most_recent_next_node.unwrap().next_node;
             }
 
-            most_recent_next_node.unwrap().next_node = Some(Box::new(ASTNode {
+            most_recent_next_node = Some(Box::new(ASTNode {
                 left_child: token_sequence[token_idx].clone(),
                 next_node: None,
             }))
