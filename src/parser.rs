@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{
     lexer::match_token_buffer,
     primitives::{ASTNode, Token, TokenType},
@@ -11,15 +13,16 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
     };
 
     let number_of_tokens: usize = token_sequence.len();
-    (0..=number_of_tokens - 1).for_each(|token_idx| {
+    let vec_indices: Range<usize> = 0..number_of_tokens - 1;
+    vec_indices.for_each(|token_idx| {
         if token_idx < number_of_tokens - 1 {
-            let mut most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
-            while most_recent_next_node.is_some() {
-                dbg!(&most_recent_next_node);
-                most_recent_next_node = most_recent_next_node.unwrap().next_node;
+            let mut _most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
+            while _most_recent_next_node.is_some() {
+                dbg!(&_most_recent_next_node);
+                _most_recent_next_node = _most_recent_next_node.unwrap().next_node;
             }
 
-            most_recent_next_node = Some(Box::new(ASTNode {
+            _most_recent_next_node = Some(Box::new(ASTNode {
                 left_child: token_sequence[token_idx].clone(),
                 next_node: None,
             }))
