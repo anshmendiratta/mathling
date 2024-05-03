@@ -49,7 +49,6 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
                 true => '\'',
                 false => '"',
             };
-
             let apostrophe_matches: Vec<_> =
                 token_buffer_as_string.match_indices(delimiter).collect();
 
@@ -61,7 +60,7 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
             let second_match_index = apostrophe_matches[1].0;
 
             let token_value: RepData = RepData::STRING(
-                token_buffer_as_string[first_match_index..second_match_index].to_string(),
+                token_buffer_as_string[first_match_index + 1..second_match_index].to_string(),
             );
             let token: Token = Token {
                 kind: TokenType::STRING,
