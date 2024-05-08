@@ -1,3 +1,8 @@
+#[derive(Debug, PartialEq)]
+pub enum Error {
+    ConsistentScope(String),
+}
+
 /// `left_child`: `TOKEN`
 /// `right_child`: equals `next_node` that is a recursive
 #[derive(Debug, Clone)]

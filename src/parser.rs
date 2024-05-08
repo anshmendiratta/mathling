@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{env::current_exe, ops::Range};
 
 use crate::{
     lexer::match_token_buffer,
@@ -30,6 +30,18 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
     });
 
     Ok(root_node)
+}
+
+pub fn traverse_syntax_tree(root_node: ASTNode) {
+    let mut current_node: ASTNode = root_node;
+    loop {
+        if current_node.next_node.as_ref().is_none() {
+            break;
+        }
+
+        dbg!(&current_node);
+        current_node = *current_node.next_node.unwrap();
+    }
 }
 
 pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {

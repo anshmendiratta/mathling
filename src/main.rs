@@ -1,4 +1,4 @@
-use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source};
+use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source, traverse_syntax_tree};
 use make_lang::primitives::Token;
 use make_lang::primitives::{ASTNode, TokenType};
 use make_lang::traits::OptionStringify;
@@ -36,11 +36,9 @@ fn main() -> std::io::Result<()> {
 
     let tokens: Vec<Token> = pair_tokens(read_tokens_sequence_of_source()?);
 
-    let mut root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens).unwrap();
-    while root_node_of_syntax_tree.next_node.is_some() {
-        dbg!(&root_node_of_syntax_tree);
-        root_node_of_syntax_tree = *root_node_of_syntax_tree.next_node.unwrap();
-    }
+    let root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens)?;
+    dbg!(&root_node_of_syntax_tree);
+    traverse_syntax_tree(root_node_of_syntax_tree);
 
     Ok(())
 }

@@ -1,19 +1,26 @@
-use crate::primitives::{RepData, Token, TokenType};
+use crate::primitives::{Error, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
-    let mut read_buffer: Vec<&str> = Vec::new(); // Maximal munch
+    let error_msg: String;
+    let mut read_buffer: Vec<&str> = Vec::new(); // NOTE: Maximal munch
     let mut tokens: Vec<Token> = Vec::new();
-    let paren_scope: usize = 0;
+    let mut paren_scope: isize = 0;
 
     // let parse_string_lines: Vec<&str> = parse_string.split('\n');
     let parse_string_scopes = parse_string.split('(');
 
     for character in parse_string.chars() {
         if character == '(' {
-            let _ = paren_scope.checked_add(1);
+            paren_scope += 1;
         } else if character == ')' {
-            let _ = paren_scope.checked_sub(1);
+            paren_scope -= 1;
         }
+    }
+
+    if paren_scope != 0 {
+        error_msg = format!("Missing {} delimiters", paren_scope);
+        let err = Error::ConsistentScope(error_msg);
+        panic!("{:?}", err);
     }
 
     for line in parse_string_scopes {
@@ -34,7 +41,6 @@ pub fn tokenize(parse_string: String) -> Vec<Token> {
         }
     }
 
-    // dbg!(paren_scope);
     tokens
 }
 
