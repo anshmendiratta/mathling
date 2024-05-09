@@ -37,7 +37,6 @@ fn main() -> std::io::Result<()> {
     let tokens: Vec<Token> = pair_tokens(read_tokens_sequence_of_source()?);
 
     let root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens)?;
-    dbg!(&root_node_of_syntax_tree);
     traverse_syntax_tree(root_node_of_syntax_tree);
 
     Ok(())
