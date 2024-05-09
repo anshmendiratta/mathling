@@ -1,4 +1,4 @@
-use std::{env::current_exe, ops::Range};
+use std::ops::Range;
 
 use crate::{
     lexer::match_token_buffer,
@@ -18,7 +18,6 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
         if token_idx < number_of_tokens - 1 {
             let mut _most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
             while _most_recent_next_node.is_some() {
-                dbg!(&_most_recent_next_node);
                 _most_recent_next_node = _most_recent_next_node.unwrap().next_node;
             }
 
@@ -35,12 +34,13 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
 pub fn traverse_syntax_tree(root_node: ASTNode) {
     let mut current_node: ASTNode = root_node;
     loop {
-        if current_node.next_node.as_ref().is_none() {
+        dbg!(&current_node);
+
+        if current_node.get_next_node().is_none() {
             break;
         }
 
-        dbg!(&current_node);
-        current_node = *current_node.next_node.unwrap();
+        current_node = current_node.get_next_node().unwrap();
     }
 }
 
@@ -50,7 +50,6 @@ pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
         .split('\n')
         .map(|c| c.to_lowercase().chars().collect())
         .collect();
-    // dbg!(&tokens_sequence_as_buffers);
     let mut tokens_sequence: Vec<Token> = Vec::new();
 
     for token_buffer in tokens_sequence_as_buffers {
