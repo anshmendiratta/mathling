@@ -67,6 +67,16 @@ impl From<TokenType> for Token {
     }
 }
 
+impl ASTNode {
+    pub fn get_next_node(&self) -> Option<Self> {
+        if self.next_node.is_none() {
+            return None;
+        }
+
+        Some(*self.clone().next_node.unwrap())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::primitives::RepData;
