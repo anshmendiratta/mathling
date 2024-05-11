@@ -5,7 +5,7 @@ pub enum Error {
 
 /// `left_child`: `TOKEN`
 /// `right_child`: equals `next_node` that is a recursive
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ASTNode {
     pub left_child: Token,
     pub next_node: Option<Box<ASTNode>>,
@@ -69,7 +69,7 @@ impl From<TokenType> for Token {
 
 impl ASTNode {
     pub fn get_next_node(&self) -> Option<Self> {
-        if self.next_node.is_none() {
+        if self.next_node.as_ref().is_none() {
             return None;
         }
 
@@ -77,11 +77,23 @@ impl ASTNode {
     }
 }
 
+impl std::fmt::Display for RepData {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RepData::STRING(s) => println!("{}", s),
+            RepData::UINT(ui) => println!("{}", ui),
+            RepData::IINT(ii) => println!("{}", ii),
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::primitives::RepData;
 
-    use super::{Token, TokenType};
+    use super::{ASTNode, Token, TokenType};
 
     #[test]
     fn check_token_into() {
@@ -98,5 +110,19 @@ mod tests {
 
         assert_eq!(expected_token_1, tokentype_1.into());
         assert_eq!(expected_token_2, tokentype_2.into());
+    }
+
+    #[test]
+    pub fn extract_next_node() {
+        let child_node: ASTNode = ASTNode {
+            left_child: TokenType::NULL.into(),
+            next_node: None,
+        };
+        let root_node: ASTNode = ASTNode {
+            left_child: TokenType::NULL.into(),
+            next_node: Some(Box::new(child_node.clone())),
+        };
+
+        assert_eq!(Some(child_node), root_node.get_next_node());
     }
 }
