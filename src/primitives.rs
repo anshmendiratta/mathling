@@ -69,23 +69,11 @@ impl From<TokenType> for Token {
 
 impl ASTNode {
     pub fn get_next_node(&self) -> Option<Self> {
-        if self.next_node.as_ref().is_none() {
-            return None;
+        if let Some(next_node) = self.next_node.clone() {
+            return Some(*next_node);
         }
 
-        Some(*self.clone().next_node.unwrap())
-    }
-}
-
-impl std::fmt::Display for RepData {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RepData::STRING(s) => println!("{}", s),
-            RepData::UINT(ui) => println!("{}", ui),
-            RepData::IINT(ii) => println!("{}", ii),
-        }
-
-        Ok(())
+        None
     }
 }
 

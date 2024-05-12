@@ -1,5 +1,5 @@
-use make_lang::interpreter::eval_statement;
-use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source, traverse_syntax_tree};
+use make_lang::interpreter::eval_syntax_tree;
+use make_lang::parser::{make_syntax_tree, read_tokens_sequence_of_source};
 use make_lang::primitives::Token;
 use make_lang::primitives::{ASTNode, TokenType};
 use make_lang::traits::OptionStringify;
@@ -41,18 +41,9 @@ fn main() -> std::io::Result<()> {
     let tokens: Vec<Token> = pair_tokens(read_tokens_sequence_of_source()?);
 
     let root_node_of_syntax_tree: ASTNode = make_syntax_tree(tokens)?;
-    // traverse_syntax_tree(root_node_of_syntax_tree);
+    eval_syntax_tree(root_node_of_syntax_tree.clone());
 
     // EVAL LOOP
-    let mut current_node: ASTNode = root_node_of_syntax_tree;
-    loop {
-        eval_statement(current_node.left_child.clone());
-        if current_node.get_next_node().is_none() {
-            break;
-        }
-
-        current_node = current_node.get_next_node().unwrap();
-    }
 
     Ok(())
 }

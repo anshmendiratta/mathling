@@ -1,2 +1,4 @@
 PRINT
-STRING("HELLO WORLD")
+STRING("what")
+PRINT
+STRING("who")

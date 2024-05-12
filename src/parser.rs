@@ -5,7 +5,6 @@ use crate::{
     primitives::{ASTNode, Token, TokenType},
 };
 
-/// returns a `std::io::Result<Box<ASTNode>>`
 pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> {
     let root_node: ASTNode = ASTNode {
         left_child: token_sequence[0].clone(),
@@ -29,19 +28,6 @@ pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> 
     });
 
     Ok(root_node)
-}
-
-pub fn traverse_syntax_tree(root_node: ASTNode) {
-    let mut current_node: ASTNode = root_node;
-    loop {
-        dbg!(&current_node);
-
-        if current_node.get_next_node().is_none() {
-            break;
-        }
-
-        current_node = current_node.get_next_node().unwrap();
-    }
 }
 
 pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
@@ -70,10 +56,11 @@ pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
                 if idx >= token_sequence.len() - 1 {
                     continue;
                 }
-                let next_token = token_sequence[idx + 1].clone();
+                let current_token: &Token = &token_sequence[idx];
+                let next_token: &Token = &token_sequence[idx + 1];
                 paired_tokens.push(Token {
-                    kind: token_sequence[idx].clone().kind,
-                    value: next_token.value,
+                    kind: current_token.kind.clone(),
+                    value: next_token.value.clone(),
                 });
             }
             _ => paired_tokens.push(token.clone()),

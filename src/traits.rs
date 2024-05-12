@@ -1,4 +1,4 @@
-use crate::primitives::{Token, TokenType};
+use crate::primitives::{RepData, Token, TokenType};
 
 pub trait Stringify<T>
 where
@@ -11,11 +11,11 @@ impl Stringify<Token> for Token {
     fn as_string(&self) -> String {
         match self.kind {
             TokenType::PRINT => String::from("PRINT"),
-            TokenType::STRING => format!("STRING({:?})", self.value.clone().unwrap()),
+            TokenType::STRING => format!("STRING({:?})", self.value.as_ref().unwrap()),
             TokenType::FUNCTION => String::from("FUNCTION"),
             TokenType::RPAREN => String::from("RPAREN"),
             TokenType::LPAREN => String::from("LPAREN"),
-            TokenType::RETURN => format!("RETURN({:?})", self.value.clone().unwrap()),
+            TokenType::RETURN => format!("RETURN({:?})", self.value.as_ref().unwrap()),
             TokenType::NULL => String::from("NULL"),
         }
     }
@@ -64,6 +64,18 @@ where
         }
 
         maybe_extracted_string
+    }
+}
+
+impl std::fmt::Display for RepData {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RepData::STRING(s) => println!("{}", s),
+            RepData::UINT(ui) => println!("{}", ui),
+            RepData::IINT(ii) => println!("{}", ii),
+        }
+
+        Ok(())
     }
 }
 
