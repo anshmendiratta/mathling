@@ -2,3 +2,5 @@ PRINT
 STRING("what")
 PRINT
 STRING("who")
+PRINT
+STRING("where")
