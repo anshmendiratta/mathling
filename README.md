@@ -1,4 +1,4 @@
-# make_lang
+# make_lang / `no-ast`
 
 An educational "make-a-LISP" interpreter written in Rust.
 
