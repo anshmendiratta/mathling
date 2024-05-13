@@ -1,4 +1,6 @@
-use crate::primitives::{Error, InfixOperation, RepData, Token, TokenType};
+use std::{char, collections::HashSet};
+
+use crate::primitives::{Error, InfixOperation, Number, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
     let error_msg: String;
@@ -44,8 +46,56 @@ pub fn tokenize(parse_string: String) -> Vec<Token> {
     tokens
 }
 
+fn check_if_string_is_number(token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+
+    let mut letters_of_token: HashSet<char> = HashSet::new();
+    token.chars().into_iter().for_each(|character| {
+        letters_of_token.insert(character);
+    });
+
+    let number_of_digits_in_token: u32 = letters_of_token
+        .iter()
+        .take_while(|character| character.is_digit(10))
+        .map(|digit| digit.to_digit(10).unwrap())
+        .sum();
+
+    number_of_digits_in_token == token.len().try_into().unwrap()
+}
+
+/// Assumes the input is not empty and valid
+fn convert_string_to_digit(digit_candidate: &str) -> u32 {
+    let digits_vector: Vec<u32> = digit_candidate
+        .trim_start()
+        .trim_end()
+        .chars()
+        .map(|dig_char| dig_char.to_digit(10).unwrap())
+        .collect();
+    let mut resulting_number: u32 = 0;
+
+    for (place, digit) in digits_vector.iter().rev().enumerate() {
+        resulting_number += digit * 10_u32.pow(place as u32);
+    }
+
+    resulting_number
+}
+
 pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Option<Token> {
     let token_buffer_as_string: &str = &token_buffer.iter().collect::<String>();
+
+    // Match numbers
+    if check_if_string_is_number(token_buffer_as_string) {
+        let converted_number: usize = convert_string_to_digit(token_buffer_as_string) as usize;
+
+        return Some(Token {
+            kind: TokenType::NUMBER,
+            value: Some(RepData::NUMBER(Number::UINT(converted_number))),
+        });
+    }
+
+    // Match specific keywords
     match token_buffer_as_string {
         "print" => Some(TokenType::PRINT.into()),
         "(" => Some(TokenType::LPAREN.into()),
@@ -85,7 +135,7 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
 #[cfg(test)]
 mod tests {
     use crate::{
-        lexer::match_token_buffer,
+        lexer::{convert_string_to_digit, match_token_buffer},
         primitives::{RepData, Token, TokenType},
     };
 
@@ -120,5 +170,16 @@ mod tests {
             }),
             match_token_buffer(test_4, false)
         );
+    }
+
+    #[test]
+    fn check_conversion_to_integer() {
+        let input_string_1: &str = "101";
+        let expected_digit_1: u32 = 101;
+        let input_string_2: &str = "0";
+        let expected_digit_2: u32 = 0;
+
+        assert_eq!(expected_digit_1, convert_string_to_digit(input_string_1));
+        assert_eq!(expected_digit_2, convert_string_to_digit(input_string_2));
     }
 }
