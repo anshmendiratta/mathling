@@ -58,7 +58,7 @@ where
         let open_brackets_indices: Vec<(usize, &str)> =
             formatted_string.match_indices('(').collect();
         let last_open_bracket_index: usize =
-            open_brackets_indices[open_brackets_indices.len().checked_sub(1).unwrap_or(0)].0;
+            open_brackets_indices[open_brackets_indices.len().saturating_sub(1)].0;
         let close_brackets_indices: Vec<(usize, &str)> =
             formatted_string.match_indices(')').collect();
         let first_close_bracket_index: usize = close_brackets_indices[0].0;
@@ -67,7 +67,7 @@ where
             &formatted_string[last_open_bracket_index + 1..first_close_bracket_index];
 
         if maybe_extracted_string.starts_with('"') && maybe_extracted_string.ends_with('"') {
-            return maybe_extracted_string[1..maybe_extracted_string.len() - 1].to_string();
+            return maybe_extracted_string.trim_matches('"').to_string();
         }
 
         maybe_extracted_string.to_string()
@@ -75,31 +75,31 @@ where
 }
 
 impl std::fmt::Display for RepData {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RepData::STRING(s) => println!("{}", s),
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let _ = match self {
+            RepData::STRING(s) => writeln!(f, "{}", s),
             RepData::NUMBER(n) => match n {
-                Number::UINT(ui) => println!("{}", ui),
-                Number::IINT(ii) => println!("{}", ii),
+                Number::UINT(ui) => writeln!(f, "{}", ui),
+                Number::IINT(ii) => writeln!(f, "{}", ii),
             },
             RepData::TWONUMBER(n, m) => match (n, m) {
-                (Number::UINT(ui_1), Number::UINT(ui_2)) => println!("{}, {}", ui_1, ui_2),
-                (Number::IINT(ii_1), Number::IINT(ii_2)) => println!("{}, {}", ii_1, ii_2),
-                (Number::UINT(ui), Number::IINT(ii)) => println!("{}, {}", ui, ii),
-                (Number::IINT(ii), Number::UINT(ui)) => println!("{}, {}", ii, ui),
+                (Number::UINT(ui_1), Number::UINT(ui_2)) => writeln!(f, "{}, {}", ui_1, ui_2),
+                (Number::IINT(ii_1), Number::IINT(ii_2)) => writeln!(f, "{}, {}", ii_1, ii_2),
+                (Number::UINT(ui), Number::IINT(ii)) => writeln!(f, "{}, {}", ui, ii),
+                (Number::IINT(ii), Number::UINT(ui)) => writeln!(f, "{}, {}", ii, ui),
             },
-        }
+        };
 
         Ok(())
     }
 }
 
 impl std::fmt::Display for Number {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Number::UINT(ui) => println!("{}", ui),
-            Number::IINT(ii) => println!("{}", ii),
-        }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let _ = match self {
+            Number::UINT(ui) => writeln!(f, "{}", ui),
+            Number::IINT(ii) => writeln!(f, "{}", ii),
+        };
 
         Ok(())
     }
