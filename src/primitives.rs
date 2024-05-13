@@ -28,6 +28,7 @@ pub enum TokenType {
     LPAREN,
     RETURN,
     NULL,
+    NUMBER,
     BINOP(InfixOperation),
 }
 
@@ -43,6 +44,11 @@ pub enum InfixOperation {
 #[derive(Debug, Clone, PartialEq)]
 pub enum RepData {
     STRING(String),
+    NUMBER(Number),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Number {
     UINT(usize),
     IINT(isize),
 }
@@ -58,6 +64,7 @@ impl Token {
             TokenType::RETURN => format!("{:?}", self.value),
             TokenType::NULL => "NULL".to_owned(),
             TokenType::BINOP(op) => format!("{:?}", op),
+            TokenType::NUMBER => format!("NUMBER({:?})", self.value),
         }
     }
 }
