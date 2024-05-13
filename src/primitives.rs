@@ -28,6 +28,15 @@ pub enum TokenType {
     LPAREN,
     RETURN,
     NULL,
+    BINOP(InfixOperation),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum InfixOperation {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
 }
 
 /// Sub-struct of `TOKEN` that stores values depending on the `TOKENTYPE`
@@ -40,7 +49,7 @@ pub enum RepData {
 
 impl Token {
     pub fn as_string(&self) -> String {
-        match self.kind {
+        match &self.kind {
             TokenType::PRINT => "PRINT".to_owned(),
             TokenType::STRING => format!("{:?}", self.value),
             TokenType::FUNCTION => "FUNCTION".to_owned(),
@@ -48,6 +57,7 @@ impl Token {
             TokenType::LPAREN => "LPAREN".to_owned(),
             TokenType::RETURN => format!("{:?}", self.value),
             TokenType::NULL => "NULL".to_owned(),
+            TokenType::BINOP(op) => format!("{:?}", op),
         }
     }
 }
