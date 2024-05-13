@@ -1,4 +1,4 @@
-use crate::primitives::{RepData, Token, TokenType};
+use crate::primitives::{Number, RepData, Token, TokenType};
 
 pub trait Stringify<T>
 where
@@ -18,6 +18,7 @@ impl Stringify<Token> for Token {
             TokenType::RETURN => format!("RETURN({:?})", self.value.as_ref().unwrap()),
             TokenType::NULL => String::from("NULL"),
             TokenType::BINOP(op) => format!("BINOP({:?})", op),
+            TokenType::NUMBER => String::from("NUMBER"),
         }
     }
 }
@@ -53,18 +54,23 @@ where
         }
 
         let formatted_string: String = format!("{:?}", self);
-        let maybe_extracted_string: String = formatted_string
-            .strip_prefix("Some(")
-            .expect("String empty?")
-            .strip_suffix(')')
-            .expect("Second string empty?")
-            .to_string();
+
+        let open_brackets_indices: Vec<(usize, &str)> =
+            formatted_string.match_indices("(").collect();
+        let last_open_bracket_index: usize =
+            open_brackets_indices[open_brackets_indices.len().checked_sub(1).unwrap_or(0)].0;
+        let close_brackets_indices: Vec<(usize, &str)> =
+            formatted_string.match_indices(")").collect();
+        let first_close_bracket_index: usize = close_brackets_indices[0].0;
+
+        let maybe_extracted_string: &str =
+            &formatted_string[last_open_bracket_index + 1..first_close_bracket_index];
 
         if maybe_extracted_string.starts_with('"') && maybe_extracted_string.ends_with('"') {
-            return maybe_extracted_string.trim_matches('"').to_string();
+            return maybe_extracted_string[1..maybe_extracted_string.len() - 1].to_string();
         }
 
-        maybe_extracted_string
+        maybe_extracted_string.to_string()
     }
 }
 
@@ -72,8 +78,10 @@ impl std::fmt::Display for RepData {
     fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RepData::STRING(s) => println!("{}", s),
-            RepData::UINT(ui) => println!("{}", ui),
-            RepData::IINT(ii) => println!("{}", ii),
+            RepData::NUMBER(n) => match n {
+                Number::UINT(ui) => println!("{}", ui),
+                Number::IINT(ii) => println!("{}", ii),
+            },
         }
 
         Ok(())
