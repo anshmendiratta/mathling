@@ -15,8 +15,6 @@ When beginning this project, the structure of the program and interpreter did no
 1. `no-ast`: No ASTs
 2. `master`: With ASTs
 
---- 
-
 ## Goals
 
 - [ ] Add parsing of numbers
