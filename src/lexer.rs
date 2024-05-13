@@ -1,4 +1,4 @@
-use crate::primitives::{Error, RepData, Token, TokenType};
+use crate::primitives::{Error, InfixOperation, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
     let error_msg: String;
@@ -50,6 +50,10 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
         "print" => Some(TokenType::PRINT.into()),
         "(" => Some(TokenType::LPAREN.into()),
         ")" => Some(TokenType::RPAREN.into()),
+        "+" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
+        "-" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
+        "*" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
+        "/" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
         _ => {
             let delimiter: char = match read_from_source {
                 true => '\'',
