@@ -1,34 +1,7 @@
-use std::ops::Range;
-
 use crate::{
     lexer::match_token_buffer,
-    primitives::{ASTNode, Token, TokenType},
+    primitives::{Token, TokenType},
 };
-
-pub fn make_syntax_tree(token_sequence: Vec<Token>) -> std::io::Result<ASTNode> {
-    let root_node: ASTNode = ASTNode {
-        left_child: token_sequence[0].clone(),
-        next_node: None,
-    };
-
-    let number_of_tokens: usize = token_sequence.len();
-    let vec_indices: Range<usize> = 0..number_of_tokens - 1;
-    vec_indices.for_each(|token_idx| {
-        if token_idx < number_of_tokens - 1 {
-            let mut _most_recent_next_node: Option<Box<ASTNode>> = root_node.next_node.clone();
-            while _most_recent_next_node.is_some() {
-                _most_recent_next_node = _most_recent_next_node.unwrap().next_node;
-            }
-
-            _most_recent_next_node = Some(Box::new(ASTNode {
-                left_child: token_sequence[token_idx].clone(),
-                next_node: None,
-            }))
-        }
-    });
-
-    Ok(root_node)
-}
 
 pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
     let token_sequence_from_file = std::fs::read_to_string("tokens.txt")?;
