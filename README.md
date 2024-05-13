@@ -1,4 +1,4 @@
-# make_lang
+# make_lang / `master`
 
 An educational "make-a-LISP" interpreter written in Rust.
 
