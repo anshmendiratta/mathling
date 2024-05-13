@@ -1,3 +1,2 @@
 (print ('what'))
-(print ('who'))
-(print ('where'))
+(print (2 + 4))

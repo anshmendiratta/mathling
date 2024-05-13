@@ -9,7 +9,7 @@ where
 
 impl Stringify<Token> for Token {
     fn as_string(&self) -> String {
-        match self.kind {
+        match &self.kind {
             TokenType::PRINT => String::from("PRINT"),
             TokenType::STRING => format!("STRING({:?})", self.value.as_ref().unwrap()),
             TokenType::FUNCTION => String::from("FUNCTION"),
@@ -17,6 +17,7 @@ impl Stringify<Token> for Token {
             TokenType::LPAREN => String::from("LPAREN"),
             TokenType::RETURN => format!("RETURN({:?})", self.value.as_ref().unwrap()),
             TokenType::NULL => String::from("NULL"),
+            TokenType::BINOP(op) => format!("BINOP({:?})", op),
         }
     }
 }
