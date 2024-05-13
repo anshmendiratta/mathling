@@ -52,13 +52,13 @@ fn check_if_string_is_number(token: &str) -> bool {
     }
 
     let mut letters_of_token: HashSet<char> = HashSet::new();
-    token.chars().into_iter().for_each(|character| {
+    token.chars().for_each(|character| {
         letters_of_token.insert(character);
     });
 
     let number_of_digits_in_token: u32 = letters_of_token
         .iter()
-        .take_while(|character| character.is_digit(10))
+        .take_while(|character| character.is_ascii_digit())
         .map(|digit| digit.to_digit(10).unwrap())
         .sum();
 

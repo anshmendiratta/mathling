@@ -39,9 +39,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let tokens: Vec<Token> = pair_tokens(read_tokens_sequence_of_source()?);
-    tokens
-        .iter()
-        .for_each(|statement| eval_statement(statement));
+    tokens.iter().for_each(eval_statement);
 
     Ok(())
 }

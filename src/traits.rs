@@ -56,11 +56,11 @@ where
         let formatted_string: String = format!("{:?}", self);
 
         let open_brackets_indices: Vec<(usize, &str)> =
-            formatted_string.match_indices("(").collect();
+            formatted_string.match_indices('(').collect();
         let last_open_bracket_index: usize =
             open_brackets_indices[open_brackets_indices.len().checked_sub(1).unwrap_or(0)].0;
         let close_brackets_indices: Vec<(usize, &str)> =
-            formatted_string.match_indices(")").collect();
+            formatted_string.match_indices(')').collect();
         let first_close_bracket_index: usize = close_brackets_indices[0].0;
 
         let maybe_extracted_string: &str =
@@ -82,9 +82,38 @@ impl std::fmt::Display for RepData {
                 Number::UINT(ui) => println!("{}", ui),
                 Number::IINT(ii) => println!("{}", ii),
             },
+            RepData::TWONUMBER(n, m) => match (n, m) {
+                (Number::UINT(ui_1), Number::UINT(ui_2)) => println!("{}, {}", ui_1, ui_2),
+                (Number::IINT(ii_1), Number::IINT(ii_2)) => println!("{}, {}", ii_1, ii_2),
+                (Number::UINT(ui), Number::IINT(ii)) => println!("{}, {}", ui, ii),
+                (Number::IINT(ii), Number::UINT(ui)) => println!("{}, {}", ii, ui),
+            },
         }
 
         Ok(())
+    }
+}
+
+impl std::fmt::Display for Number {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Number::UINT(ui) => println!("{}", ui),
+            Number::IINT(ii) => println!("{}", ii),
+        }
+
+        Ok(())
+    }
+}
+
+impl std::ops::Add for Number {
+    type Output = Number;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Number::UINT(ui_1), Number::UINT(ui_2)) => Number::UINT(ui_1 + ui_2),
+            (Number::IINT(ii_1), Number::IINT(ii_2)) => Number::IINT(ii_1 + ii_2),
+            _ => panic!("Inconsistent data types"),
+        }
     }
 }
 

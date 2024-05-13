@@ -45,6 +45,7 @@ pub enum InfixOperation {
 pub enum RepData {
     STRING(String),
     NUMBER(Number),
+    TWONUMBER(Number, Number),
 }
 
 #[derive(Debug, Clone, PartialEq)]
