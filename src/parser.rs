@@ -1,7 +1,4 @@
-use crate::{
-    lexer::match_token_buffer,
-    primitives::{Token, TokenType},
-};
+use crate::{lexer::match_token_buffer, primitives::Token};
 
 pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
     let token_sequence_from_file = std::fs::read_to_string("tokens.txt")?;
@@ -18,27 +15,4 @@ pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
     }
 
     Ok(tokens_sequence)
-}
-
-pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
-    let mut paired_tokens: Vec<Token> = Vec::new();
-
-    for (idx, token) in token_sequence.iter().enumerate() {
-        match token_sequence[idx].kind {
-            TokenType::PRINT | TokenType::STRING | TokenType::RETURN => {
-                if idx >= token_sequence.len() - 1 {
-                    continue;
-                }
-                let current_token: &Token = &token_sequence[idx];
-                let next_token: &Token = &token_sequence[idx + 1];
-                paired_tokens.push(Token {
-                    kind: current_token.kind.clone(),
-                    value: next_token.value.clone(),
-                });
-            }
-            _ => paired_tokens.push(token.clone()),
-        }
-    }
-
-    paired_tokens
 }

@@ -43,7 +43,30 @@ pub fn tokenize(parse_string: String) -> Vec<Token> {
         }
     }
 
-    tokens
+    pair_tokens(tokens)
+}
+
+pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
+    let mut paired_tokens: Vec<Token> = Vec::new();
+
+    for (idx, token) in token_sequence.iter().enumerate() {
+        match token_sequence[idx].kind {
+            TokenType::PRINT | TokenType::STRING | TokenType::RETURN => {
+                if idx >= token_sequence.len() - 1 {
+                    continue;
+                }
+                let current_token: &Token = &token_sequence[idx];
+                let next_token: &Token = &token_sequence[idx + 1];
+                paired_tokens.push(Token {
+                    kind: current_token.kind.clone(),
+                    value: next_token.value.clone(),
+                });
+            }
+            _ => paired_tokens.push(token.clone()),
+        }
+    }
+
+    paired_tokens
 }
 
 fn check_if_string_is_number(token: &str) -> bool {
