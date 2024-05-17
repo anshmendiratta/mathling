@@ -1,4 +1,4 @@
-use std::{char, collections::HashSet};
+use std::{char, collections::HashSet, ops::Deref};
 
 use crate::primitives::{Error, InfixOperation, Number, RepData, Token, TokenType};
 
@@ -51,7 +51,7 @@ pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
 
     for (idx, token) in token_sequence.iter().enumerate() {
         match token_sequence[idx].kind {
-            TokenType::PRINT | TokenType::STRING | TokenType::RETURN => {
+            TokenType::PRINT | TokenType::STRING | TokenType::RETURN | TokenType::BINOP(_) => {
                 if idx >= token_sequence.len() - 1 {
                     continue;
                 }
@@ -62,7 +62,7 @@ pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
                     value: next_token.value.clone(),
                 });
             }
-            _ => paired_tokens.push(token.clone()),
+            _ => paired_tokens.push(token),
         }
     }
 
@@ -82,7 +82,10 @@ fn check_if_string_is_number(token: &str) -> bool {
     let number_of_digits_in_token: u32 = letters_of_token
         .iter()
         .take_while(|character| character.is_ascii_digit())
-        .map(|digit| digit.to_digit(10).unwrap())
+        .map(|digit| match digit.to_digit(10) {
+            Some(conversion) => conversion,
+            None => panic!("Not a number!"),
+        })
         .sum();
 
     number_of_digits_in_token == token.len().try_into().unwrap()

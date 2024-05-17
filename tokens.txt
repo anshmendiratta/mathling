@@ -1,4 +1,4 @@
 PRINT
-what
+
 PRINT
 NUMBER(Some(NUMBER(UINT(2))))

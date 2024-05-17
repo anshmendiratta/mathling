@@ -1,6 +1,5 @@
 use make_lang::interpreter::eval_statement;
 use make_lang::lexer::tokenize;
-use make_lang::parser::read_tokens_sequence_of_source;
 use make_lang::primitives::Token;
 use make_lang::primitives::TokenType;
 use make_lang::traits::OptionStringify;
@@ -25,7 +24,7 @@ fn main() -> std::io::Result<()> {
     );
 
     // Read file for Tokenization
-    let mut language_file: File = File::open(format!("{}", file_to_interpret))?;
+    let mut language_file: File = File::open(file_to_interpret)?;
     let language_file_contents: String = {
         let mut contents: String = String::new();
         language_file.read_to_string(&mut contents)?;
@@ -54,7 +53,7 @@ fn main() -> std::io::Result<()> {
 
     // Write tokens
     let mut tokens_file: File = File::create("tokens.txt")?;
-    let _ = tokens_file.write_all(tokens_as_string.as_bytes());
+    tokens_file.write_all(tokens_as_string.as_bytes())?;
 
     // Evaluate tokens
     tokens.iter().for_each(eval_statement);

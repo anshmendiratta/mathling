@@ -76,17 +76,17 @@ where
 
 impl std::fmt::Display for RepData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = match self {
-            RepData::STRING(s) => writeln!(f, "{}", s),
+        match self {
+            RepData::STRING(s) => writeln!(f, "{}", s)?,
             RepData::NUMBER(n) => match n {
-                Number::UINT(ui) => writeln!(f, "{}", ui),
-                Number::IINT(ii) => writeln!(f, "{}", ii),
+                Number::UINT(ui) => writeln!(f, "{}", ui)?,
+                Number::IINT(ii) => writeln!(f, "{}", ii)?,
             },
             RepData::TWONUMBER(n, m) => match (n, m) {
-                (Number::UINT(ui_1), Number::UINT(ui_2)) => writeln!(f, "{}, {}", ui_1, ui_2),
-                (Number::IINT(ii_1), Number::IINT(ii_2)) => writeln!(f, "{}, {}", ii_1, ii_2),
-                (Number::UINT(ui), Number::IINT(ii)) => writeln!(f, "{}, {}", ui, ii),
-                (Number::IINT(ii), Number::UINT(ui)) => writeln!(f, "{}, {}", ii, ui),
+                (Number::UINT(ui_1), Number::UINT(ui_2)) => writeln!(f, "{}, {}", ui_1, ui_2)?,
+                (Number::IINT(ii_1), Number::IINT(ii_2)) => writeln!(f, "{}, {}", ii_1, ii_2)?,
+                (Number::UINT(ui), Number::IINT(ii)) => writeln!(f, "{}, {}", ui, ii)?,
+                (Number::IINT(ii), Number::UINT(ui)) => writeln!(f, "{}, {}", ii, ui)?,
             },
         };
 
@@ -96,9 +96,9 @@ impl std::fmt::Display for RepData {
 
 impl std::fmt::Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = match self {
-            Number::UINT(ui) => writeln!(f, "{}", ui),
-            Number::IINT(ii) => writeln!(f, "{}", ii),
+        match self {
+            Number::UINT(ui) => writeln!(f, "{}", ui)?,
+            Number::IINT(ii) => writeln!(f, "{}", ii)?,
         };
 
         Ok(())
