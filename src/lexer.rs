@@ -3,7 +3,6 @@ use std::collections::HashSet;
 use crate::types::{Error, InfixOperation, Number, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
-    let error_msg: String;
     let mut read_buffer: Vec<&str> = Vec::new(); // NOTE: Maximal munch
     let mut tokens: Vec<Token> = Vec::new();
     let mut paren_scope: isize = 0;
@@ -19,9 +18,10 @@ pub fn tokenize(parse_string: String) -> Vec<Token> {
         }
     }
 
+    let error_msg: String; // NOTE: Declared here so it is reassigned in scope, not deallocated
     if paren_scope != 0 {
         error_msg = format!("Missing {} delimiters", paren_scope);
-        let err = Error::ConsistentScope(error_msg);
+        let err = Error::ConsistentScopeError(error_msg);
         panic!("{:?}", err);
     }
 
