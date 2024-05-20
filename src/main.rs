@@ -1,8 +1,8 @@
 use make_lang::interpreter::eval_statement;
 use make_lang::lexer::tokenize;
-use make_lang::primitives::Token;
-use make_lang::primitives::TokenType;
 use make_lang::traits::OptionStringify;
+use make_lang::types::Token;
+use make_lang::types::TokenType;
 
 use std::env::Args;
 use std::{fs::File, io::Read, io::Write};
@@ -15,7 +15,7 @@ fn main() -> std::io::Result<()> {
     }
 
     // Determine file path
-    let file_to_interpret_rel_path = &args.take(2).collect::<Vec<String>>()[1];
+    let file_to_interpret_rel_path = &args.collect::<Vec<String>>()[1];
     let call_directory = std::env::current_dir()?;
     let file_to_interpret: String = format!(
         "{}/{}",
@@ -28,8 +28,6 @@ fn main() -> std::io::Result<()> {
     let language_file_contents: String = {
         let mut contents: String = String::new();
         language_file.read_to_string(&mut contents)?;
-
-        contents
     };
 
     // Tokenize file
@@ -40,7 +38,6 @@ fn main() -> std::io::Result<()> {
     let tokens_as_vec_string: Vec<String> = tokens
         .iter()
         .map(|token| {
-            // Removes `Some(..)` to become `..`
             if token.kind == TokenType::STRING {
                 token.value.option_as_string()
             } else {
@@ -56,7 +53,9 @@ fn main() -> std::io::Result<()> {
     tokens_file.write_all(tokens_as_string.as_bytes())?;
 
     // Evaluate tokens
-    tokens.iter().for_each(eval_statement);
+    for statement in tokens {
+        eval_statement(&statement);
+    }
 
     Ok(())
 }

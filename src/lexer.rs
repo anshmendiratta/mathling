@@ -127,9 +127,9 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
         "(" => Some(TokenType::LPAREN.into()),
         ")" => Some(TokenType::RPAREN.into()),
         "+" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
-        "-" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
-        "*" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
-        "/" => Some(TokenType::BINOP(InfixOperation::Addition).into()),
+        "-" => Some(TokenType::BINOP(InfixOperation::Subtraction).into()),
+        "*" => Some(TokenType::BINOP(InfixOperation::Multiplication).into()),
+        "/" => Some(TokenType::BINOP(InfixOperation::Division).into()),
         _ => {
             let delimiter: char = match read_from_source {
                 true => '\'',
@@ -168,7 +168,6 @@ mod tests {
     #[test]
     fn check_token_buffer_match() {
         let test_1: Vec<char> = "print".chars().collect::<Vec<char>>();
-        // TODO: Setup test 2
         let test_2: Vec<char> = "1".chars().collect::<Vec<char>>();
         let test_3: Vec<char> = "'hello world'".chars().collect::<Vec<char>>();
         let test_4: Vec<char> = r#"STRING("hello world")"#.chars().collect::<Vec<char>>();

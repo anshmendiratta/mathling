@@ -1,6 +1,6 @@
 use crate::{
-    primitives::{InfixOperation, RepData, Token, TokenType},
     traits::OptionStringify,
+    types::{InfixOperation, RepData, Token, TokenType},
 };
 
 pub fn eval_statement(statement_token: &Token) {

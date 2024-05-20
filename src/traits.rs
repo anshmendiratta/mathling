@@ -1,4 +1,4 @@
-use crate::primitives::{Number, RepData, Token, TokenType};
+use crate::types::{Number, RepData, Token, TokenType};
 
 pub trait Stringify<T>
 where
@@ -120,8 +120,8 @@ impl std::ops::Add for Number {
 #[cfg(test)]
 mod test {
     use crate::{
-        primitives::{Token, TokenType},
         traits::OptionStringify,
+        types::{Token, TokenType},
     };
 
     #[test]

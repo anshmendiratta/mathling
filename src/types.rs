@@ -80,7 +80,7 @@ impl From<TokenType> for Token {
 
 #[cfg(test)]
 mod tests {
-    use crate::primitives::RepData;
+    use crate::types::RepData;
 
     use super::{Token, TokenType};
 

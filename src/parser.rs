@@ -1,4 +1,4 @@
-use crate::{lexer::match_token_buffer, primitives::Token};
+use crate::{lexer::match_token_buffer, types::Token};
 
 pub fn read_tokens_sequence_of_source() -> std::io::Result<Vec<Token>> {
     let token_sequence_from_file = std::fs::read_to_string("tokens.txt")?;
