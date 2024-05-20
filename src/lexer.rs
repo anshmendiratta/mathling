@@ -1,6 +1,6 @@
-use std::{char, collections::HashSet, ops::Deref};
+use std::collections::HashSet;
 
-use crate::primitives::{Error, InfixOperation, Number, RepData, Token, TokenType};
+use crate::types::{Error, InfixOperation, Number, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
     let error_msg: String;
@@ -62,7 +62,7 @@ pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
                     value: next_token.value.clone(),
                 });
             }
-            _ => paired_tokens.push(token),
+            _ => paired_tokens.push(token.clone()),
         }
     }
 
@@ -162,14 +162,14 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
 mod tests {
     use crate::{
         lexer::{convert_string_to_digit, match_token_buffer},
-        primitives::{RepData, Token, TokenType},
+        types::{Number, RepData, Token, TokenType},
     };
 
     #[test]
     fn check_token_buffer_match() {
         let test_1: Vec<char> = "print".chars().collect::<Vec<char>>();
         // TODO: Setup test 2
-        // let test_2: Vec<char> = "1".chars().collect::<Vec<char>>();
+        let test_2: Vec<char> = "1".chars().collect::<Vec<char>>();
         let test_3: Vec<char> = "'hello world'".chars().collect::<Vec<char>>();
         let test_4: Vec<char> = r#"STRING("hello world")"#.chars().collect::<Vec<char>>();
 
@@ -177,11 +177,13 @@ mod tests {
             Some(TokenType::PRINT.into()),
             match_token_buffer(test_1, true)
         );
-        // NOTE: Test 2
-        // assert_eq!(
-        //     Some(TOKENTYPE::PRINT.into()),
-        //     match_token_buffer(test_2, true)
-        // );
+        assert_eq!(
+            Some(Token {
+                kind: TokenType::NUMBER,
+                value: Some(RepData::NUMBER(Number::UINT(1))),
+            }),
+            match_token_buffer(test_2, true)
+        );
         assert_eq!(
             Some(Token {
                 kind: TokenType::STRING,
