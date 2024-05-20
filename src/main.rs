@@ -28,6 +28,8 @@ fn main() -> std::io::Result<()> {
     let language_file_contents: String = {
         let mut contents: String = String::new();
         language_file.read_to_string(&mut contents)?;
+
+        contents
     };
 
     // Tokenize file
