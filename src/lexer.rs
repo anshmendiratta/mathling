@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::types::{Error, InfixOperation, Number, RepData, Token, TokenType};
 
 pub fn tokenize(parse_string: String) -> Vec<Token> {
@@ -69,51 +67,13 @@ pub fn pair_tokens(token_sequence: Vec<Token>) -> Vec<Token> {
     paired_tokens
 }
 
-fn check_if_string_is_number(token: &str) -> bool {
-    if token.is_empty() {
-        return false;
-    }
-
-    let mut letters_of_token: HashSet<char> = HashSet::new();
-    token.chars().for_each(|character| {
-        letters_of_token.insert(character);
-    });
-
-    let number_of_digits_in_token: u32 = letters_of_token
-        .iter()
-        .take_while(|character| character.is_ascii_digit())
-        .map(|digit| match digit.to_digit(10) {
-            Some(conversion) => conversion,
-            None => panic!("Not a number!"),
-        })
-        .sum();
-
-    number_of_digits_in_token == token.len().try_into().unwrap()
-}
-
-/// Assumes the input is not empty and valid
-fn convert_string_to_digit(digit_candidate: &str) -> u32 {
-    let digits_vector: Vec<u32> = digit_candidate
-        .trim_start()
-        .trim_end()
-        .chars()
-        .map(|dig_char| dig_char.to_digit(10).unwrap())
-        .collect();
-    let mut resulting_number: u32 = 0;
-
-    for (place, digit) in digits_vector.iter().rev().enumerate() {
-        resulting_number += digit * 10_u32.pow(place as u32);
-    }
-
-    resulting_number
-}
-
 pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Option<Token> {
     let token_buffer_as_string: &str = &token_buffer.iter().collect::<String>();
 
     // Match numbers
-    if check_if_string_is_number(token_buffer_as_string) {
-        let converted_number: usize = convert_string_to_digit(token_buffer_as_string) as usize;
+    if types_tokenizer::check_if_string_is_number(token_buffer_as_string) {
+        let converted_number: usize =
+            types_tokenizer::convert_string_to_digit(token_buffer_as_string) as usize;
 
         return Some(Token {
             kind: TokenType::NUMBER,
@@ -158,10 +118,53 @@ pub fn match_token_buffer(token_buffer: Vec<char>, read_from_source: bool) -> Op
     }
 }
 
+mod types_tokenizer {
+    use std::collections::HashSet;
+
+    pub fn check_if_string_is_number(token: &str) -> bool {
+        if token.is_empty() {
+            return false;
+        }
+
+        let mut letters_of_token: HashSet<char> = HashSet::new();
+        token.chars().for_each(|character| {
+            letters_of_token.insert(character);
+        });
+
+        let number_of_digits_in_token: u32 = letters_of_token
+            .iter()
+            .take_while(|character| character.is_ascii_digit())
+            .map(|digit| match digit.to_digit(10) {
+                Some(conversion) => conversion,
+                None => panic!("Not a number!"),
+            })
+            .sum();
+
+        number_of_digits_in_token == token.len().try_into().unwrap()
+    }
+
+    /// Assumes the input is not empty and valid
+    pub fn convert_string_to_digit(digit_candidate: &str) -> u32 {
+        let digits_vector: Vec<u32> = digit_candidate
+            .trim_start()
+            .trim_end()
+            .chars()
+            .map(|dig_char| dig_char.to_digit(10).unwrap())
+            .collect();
+        let mut resulting_number: u32 = 0;
+
+        for (place, digit) in digits_vector.iter().rev().enumerate() {
+            resulting_number += digit * 10_u32.pow(place as u32);
+        }
+
+        resulting_number
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        lexer::{convert_string_to_digit, match_token_buffer},
+        lexer::{match_token_buffer, types_tokenizer::convert_string_to_digit},
         types::{Number, RepData, Token, TokenType},
     };
 
