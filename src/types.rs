@@ -24,6 +24,9 @@ pub enum TokenType {
     BINOP(InfixOperation),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Expr(pub RepData, pub InfixOperation, pub RepData);
+
 /// Allowed binary, infix operations
 #[derive(Debug, Clone, PartialEq)]
 pub enum InfixOperation {
