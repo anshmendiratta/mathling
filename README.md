@@ -1,7 +1,8 @@
 # make_lang / `inkwell`
+An foray into LLVM manifested as a language.
 
 ## What?
-An foray into LLVM manifested as a language.
+[todo]
 
 ## How?
 Using LLVM@18.
