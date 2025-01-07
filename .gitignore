@@ -1,1 +1,6 @@
-/target
+.DS_Store
+.git
+.gitignore
+.Cargo.lock
+.language.db
+target
