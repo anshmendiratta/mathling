@@ -2,7 +2,7 @@
 A foray into LLVM manifested as a language.
 
 ## What?
-A small infix LISP programming language.
+A small infix programming language. More details as the language is built.
 
 Currently supported syntax:
 - 
