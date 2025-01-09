@@ -1,11 +1,12 @@
 # make_lang / `inkwell`
-A foray into LLVM manifested as a language.
-
 ## What?
-A small infix programming language. More details as the language is built.
+A small math parsing language born out of frustration from having no built-in bash math expressions.
+
+## Why LLVM?
+This project was initially formulated to help learn LLVM by having the program parse a programming language, as opposed to just math. Since then, I've had greater motivation to parse math on the command line, but still wanted to learn LLVM, so here we are.
 
 Currently supported syntax:
-- 
+- todo!()
 
 ## How?
 Parsing using `nom` and `inkwell`. Using LLVM@18.
