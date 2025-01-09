@@ -13,8 +13,9 @@ fn main() -> Result<()> {
     }
 
     let expr = args[1].clone();
+    let sanitized_expr = expr.replace(" ", "");
 
-    let mut lexer = Lexer::new(&expr);
+    let lexer = Lexer::new(&sanitized_expr);
     let tokens = lexer.lex();
     dbg!(tokens);
 

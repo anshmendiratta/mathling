@@ -4,7 +4,7 @@
 #![feature(slice_as_array)]
 
 #[derive(Debug)]
-pub enum TokenKind {
+pub enum Token {
     LeftParen,
     RightParen,
     Numeric(Number),
@@ -48,7 +48,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn lex(&mut self) -> Vec<TokenKind> {
+    pub fn lex(mut self) -> Vec<Token> {
         let mut tokens = vec![];
 
         self.advance();
@@ -71,20 +71,20 @@ impl<'a> Lexer<'a> {
         tokens
     }
 
-    fn tokenize_character(&mut self, character: char) -> Option<TokenKind> {
+    fn tokenize_character(&mut self, character: char) -> Option<Token> {
         match character {
-            '(' => return Some(TokenKind::LeftParen),
-            ')' => return Some(TokenKind::RightParen),
+            '(' => return Some(Token::LeftParen),
+            ')' => return Some(Token::RightParen),
             '0'..'9' => {
-                return Some(TokenKind::Numeric(Number::Integer(
+                return Some(Token::Numeric(Number::Integer(
                     character.to_digit(10).unwrap() as isize,
                 )))
             }
-            '+' => return Some(TokenKind::Op(Operator::Plus)),
-            '-' => return Some(TokenKind::Op(Operator::Minus)),
-            '*' => return Some(TokenKind::Op(Operator::Asterisk)),
-            '/' => return Some(TokenKind::Op(Operator::Slash)),
-            ' ' => return Some(TokenKind::Whitespace),
+            '+' => return Some(Token::Op(Operator::Plus)),
+            '-' => return Some(Token::Op(Operator::Minus)),
+            '*' => return Some(Token::Op(Operator::Asterisk)),
+            '/' => return Some(Token::Op(Operator::Slash)),
+            ' ' => return Some(Token::Whitespace),
             _ => None,
         }
     }
