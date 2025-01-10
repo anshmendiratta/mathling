@@ -1,5 +1,4 @@
-# make_lang / `inkwell`
-## What?
+# lispling
 A small math parsing language born out of frustration from having no built-in bash math expressions.
 
 ## Why LLVM?
