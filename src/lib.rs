@@ -7,6 +7,8 @@ pub mod codegen;
 pub mod parse;
 
 pub mod lexer {
+    use std::fmt::Write;
+
     #[derive(Debug, Clone)]
     pub enum Token {
         LeftParen,
@@ -21,6 +23,15 @@ pub mod lexer {
         // TOOD: Add support for later.
         FloatingPoint(f64),
         Integer(usize),
+    }
+
+    impl std::fmt::Display for Number {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Number::FloatingPoint(fp) => f.write_str(&fp.to_string()),
+                Number::Integer(n) => f.write_str(&n.to_string()),
+            }
+        }
     }
 
     #[derive(Debug, Clone)]

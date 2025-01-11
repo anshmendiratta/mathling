@@ -22,7 +22,7 @@ impl<'ctx> Compiler<'ctx> {
         Self { codegen, lexer }
     }
 
-    pub fn run(self) {
+    pub fn run(self) -> Number {
         let lexed_tokens = self.lexer.lex();
         let parser = Parser::new(lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn();
@@ -41,13 +41,6 @@ impl<'ctx> Compiler<'ctx> {
             as JitFunction<'ctx, Function>;
         let div = { unsafe { execution_engine.get_function("div").ok().unwrap() } }
             as JitFunction<'ctx, Function>;
-
-        dbg!(self
-            .codegen
-            .module
-            .get_functions()
-            .map(|f| f.to_string())
-            .collect::<Vec<String>>());
 
         let mut stack = vec![];
         for token in rpn_tokens {
@@ -90,7 +83,13 @@ impl<'ctx> Compiler<'ctx> {
             }
         }
 
-        dbg!(stack);
+        if stack.len() != 1 {
+            panic!("Error: After eval, tokens remain. Bad expression?")
+        };
+        match stack[0].clone() {
+            Token::Numeric(n) => return n,
+            _ => panic!("Error: After eval, last token is NOT a number."),
+        }
     }
 }
 

@@ -23,7 +23,9 @@ fn main() -> Result<()> {
     };
     let lexer = Lexer::new(&expr);
     let compiler = Compiler::new(&expr, codegen, lexer);
-    compiler.run();
+    let output = compiler.run();
+
+    println!("Result: {}", output);
 
     Ok(())
 }
