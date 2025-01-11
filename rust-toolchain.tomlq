@@ -1,0 +1,149 @@
+[1mdiff --git a/src/codegen.rs b/src/codegen.rs[m
+[1mindex 54f071a..12223e8 100644[m
+[1m--- a/src/codegen.rs[m
+[1m+++ b/src/codegen.rs[m
+[36m@@ -26,13 +26,11 @@[m [mimpl<'ctx> Compiler<'ctx> {[m
+         let lexed_tokens = self.lexer.lex();[m
+         let parser = Parser::new(lexed_tokens);[m
+         let rpn_tokens = parser.parse_as_rpn();[m
+[31m-        dbg!(&rpn_tokens);[m
+ [m
+[31m-        let sum = &self.codegen.compile_sum();[m
+[31m-        let sub = &self.codegen.compile_sub();[m
+[31m-        // let mul = &self.codegen.compile_mul();[m
+[31m-        // let div = &self.codegen.compile_div();[m
+[31m-        dbg!(self.codegen.module.get_functions());[m
+[32m+[m[32m        let sum = &self.codegen.compile_sum().unwrap();[m
+[32m+[m[32m        let sub = &self.codegen.compile_sub().unwrap();[m
+[32m+[m[32m        let mul = &self.codegen.compile_mul().unwrap();[m
+[32m+[m[32m        let div = &self.codegen.compile_div().unwrap();[m
+ [m
+         let mut stack = vec![];[m
+         for token in rpn_tokens {[m
+[36m@@ -54,20 +52,20 @@[m [mimpl<'ctx> Compiler<'ctx> {[m
+                     };[m
+                     match op {[m
+                         Operator::Plus => {[m
+[31m-                            // let answer = unsafe { sum.call(x, y) };[m
+[31m-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+[32m+[m[32m                            let answer = unsafe { sum.call(x, y) };[m
+[32m+[m[32m                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+                         }[m
+                         Operator::Minus => {[m
+[31m-                            // let answer = unsafe { sub.call(x, y) };[m
+[31m-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+[32m+[m[32m                            let answer = unsafe { sub.call(x, y) };[m
+[32m+[m[32m                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+                         }[m
+                         Operator::Asterisk => {[m
+[31m-                            // let answer = unsafe { mul.call(x, y) };[m
+[31m-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+[32m+[m[32m                            let answer = unsafe { mul.call(x, y) };[m
+[32m+[m[32m                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+                         }[m
+                         Operator::Slash => {[m
+[31m-                            // let answer = unsafe { div.call(x, y) };[m
+[31m-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+[32m+[m[32m                            let answer = unsafe { div.call(x, y) };[m
+[32m+[m[32m                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));[m
+                         }[m
+                     }[m
+                 }[m
+[36m@@ -81,7 +79,10 @@[m [mimpl<'ctx> Compiler<'ctx> {[m
+ [m
+ pub struct CodeGen<'ctx> {[m
+     pub context: &'ctx Context,[m
+[31m-    pub module: Module<'ctx>,[m
+[32m+[m[32m    pub sum_module: Module<'ctx>,[m
+[32m+[m[32m    pub sub_module: Module<'ctx>,[m
+[32m+[m[32m    pub mul_module: Module<'ctx>,[m
+[32m+[m[32m    pub div_module: Module<'ctx>,[m
+     pub builder: Builder<'ctx>,[m
+     pub execution_engine: ExecutionEngine<'ctx>,[m
+ }[m
+[36m@@ -98,10 +99,10 @@[m [mimpl<'ctx> CodeGen<'ctx> {[m
+         None[m
+     }[m
+ [m
+[31m-    pub fn compile_sum(&self) -> Option<inkwell::values::FunctionValue<'_>> {[m
+[32m+[m[32m    pub fn compile_sum(&self) -> Option<JitFunction<Function>> {[m
+         let f64_type = self.context.f64_type();[m
+         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);[m
+[31m-        let function = self.module.add_function("sum", fn_type, None);[m
+[32m+[m[32m        let function = self.sum_module.add_function("sum", fn_type, None);[m
+         let basic_block = self.context.append_basic_block(function, "add_entry");[m
+ [m
+         self.builder.position_at_end(basic_block);[m
+[36m@@ -116,13 +117,13 @@[m [mimpl<'ctx> CodeGen<'ctx> {[m
+ [m
+         self.builder.build_return(Some(&sum)).unwrap();[m
+ [m
+[31m-        unsafe { self.module.get_function("sum") }[m
+[32m+[m[32m        unsafe { self.execution_engine.get_function("sum").ok() }[m
+     }[m
+ [m
+[31m-    fn compile_sub(&self) -> Option<inkwell::values::FunctionValue<'_>> {[m
+[32m+[m[32m    fn compile_sub(&self) -> Option<JitFunction<Function>> {[m
+         let f64_type = self.context.f64_type();[m
+         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);[m
+[31m-        let function = self.module.add_function("sub", fn_type, None);[m
+[32m+[m[32m        let function = self.sub_module.add_function("sub", fn_type, None);[m
+         let basic_block = self.context.append_basic_block(function, "sub_entry");[m
+ [m
+         self.builder.position_at_end(basic_block);[m
+[36m@@ -137,13 +138,13 @@[m [mimpl<'ctx> CodeGen<'ctx> {[m
+ [m
+         self.builder.build_return(Some(&sub)).unwrap();[m
+ [m
+[31m-        unsafe { self.module.get_function("sub") }[m
+[32m+[m[32m        unsafe { self.execution_engine.get_function("sub").ok() }[m
+     }[m
+ [m
+     fn compile_mul(&self) -> Option<JitFunction<Function>> {[m
+         let f64_type = self.context.f64_type();[m
+         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);[m
+[31m-        let function = self.module.add_function("mul", fn_type, None);[m
+[32m+[m[32m        let function = self.mul_module.add_function("mul", fn_type, None);[m
+         let basic_block = self.context.append_basic_block(function, "mul_entry");[m
+ [m
+         self.builder.position_at_end(basic_block);[m
+[36m@@ -164,7 +165,7 @@[m [mimpl<'ctx> CodeGen<'ctx> {[m
+     pub fn compile_div(&self) -> Option<JitFunction<Function>> {[m
+         let f64_type = self.context.f64_type();[m
+         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);[m
+[31m-        let function = self.module.add_function("div", fn_type, None);[m
+[32m+[m[32m        let function = self.div_module.add_function("div", fn_type, None);[m
+         let basic_block = self.context.append_basic_block(function, "div_entry");[m
+ [m
+         self.builder.position_at_end(basic_block);[m
+[1mdiff --git a/src/main.rs b/src/main.rs[m
+[1mindex b2fc9d2..38b118b 100644[m
+[1m--- a/src/main.rs[m
+[1m+++ b/src/main.rs[m
+[36m@@ -15,13 +15,24 @@[m [mfn main() -> Result<()> {[m
+     let expr = args[1].clone();[m
+ [m
+     let ctx = Context::create();[m
+[31m-    let module = ctx.create_module("Primary");[m
+[32m+[m[32m    let module = ctx.create_module("primary");[m
+[32m+[m[32m    let sum_module = ctx.create_module("sum");[m
+[32m+[m[32m    let sub_module = ctx.create_module("sub");[m
+[32m+[m[32m    let mul_module = ctx.create_module("mul");[m
+[32m+[m[32m    let div_module = ctx.create_module("div");[m
+     let exec_engine = module[m
+         .create_jit_execution_engine(inkwell::OptimizationLevel::None)[m
+         .unwrap();[m
+[32m+[m[32m    exec_engine.add_module(&sum_module).unwrap();[m
+[32m+[m[32m    exec_engine.add_module(&sub_module).unwrap();[m
+[32m+[m[32m    exec_engine.add_module(&mul_module).unwrap();[m
+[32m+[m[32m    exec_engine.add_module(&div_module).unwrap();[m
+     let codegen = CodeGen {[m
+         context: &ctx,[m
+[31m-        module,[m
+[32m+[m[32m        sum_module,[m
+[32m+[m[32m        sub_module,[m
+[32m+[m[32m        mul_module,[m
+[32m+[m[32m        div_module,[m
+         builder: ctx.create_builder(),[m
+         execution_engine: exec_engine,[m
+     };[m

@@ -15,15 +15,11 @@ fn main() -> Result<()> {
     let expr = args[1].clone();
 
     let ctx = Context::create();
-    let module = ctx.create_module("Primary");
-    let exec_engine = module
-        .create_jit_execution_engine(inkwell::OptimizationLevel::None)
-        .unwrap();
+    let module = ctx.create_module("primary");
     let codegen = CodeGen {
         context: &ctx,
         module,
         builder: ctx.create_builder(),
-        execution_engine: exec_engine,
     };
     let lexer = Lexer::new(&expr);
     let compiler = Compiler::new(&expr, codegen, lexer);

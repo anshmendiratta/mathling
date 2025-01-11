@@ -26,13 +26,28 @@ impl<'ctx> Compiler<'ctx> {
         let lexed_tokens = self.lexer.lex();
         let parser = Parser::new(lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn();
-        dbg!(&rpn_tokens);
 
-        let sum = &self.codegen.compile_sum();
-        let sub = &self.codegen.compile_sub();
-        // let mul = &self.codegen.compile_mul();
-        // let div = &self.codegen.compile_div();
-        dbg!(self.codegen.module.get_functions());
+        let _ = &self.codegen.compile_all();
+        let execution_engine: ExecutionEngine<'ctx> = self
+            .codegen
+            .module
+            .create_jit_execution_engine(inkwell::OptimizationLevel::None)
+            .unwrap();
+        let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
+            as JitFunction<'ctx, Function>;
+        let sub = { unsafe { execution_engine.get_function("sub").ok().unwrap() } }
+            as JitFunction<'ctx, Function>;
+        let mul = { unsafe { execution_engine.get_function("mul").ok().unwrap() } }
+            as JitFunction<'ctx, Function>;
+        let div = { unsafe { execution_engine.get_function("div").ok().unwrap() } }
+            as JitFunction<'ctx, Function>;
+
+        dbg!(self
+            .codegen
+            .module
+            .get_functions()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>());
 
         let mut stack = vec![];
         for token in rpn_tokens {
@@ -54,20 +69,20 @@ impl<'ctx> Compiler<'ctx> {
                     };
                     match op {
                         Operator::Plus => {
-                            // let answer = unsafe { sum.call(x, y) };
-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            let answer = unsafe { sum.call(x, y) };
+                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
                         }
                         Operator::Minus => {
-                            // let answer = unsafe { sub.call(x, y) };
-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            let answer = unsafe { sub.call(x, y) };
+                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
                         }
                         Operator::Asterisk => {
-                            // let answer = unsafe { mul.call(x, y) };
-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            let answer = unsafe { mul.call(x, y) };
+                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
                         }
                         Operator::Slash => {
-                            // let answer = unsafe { div.call(x, y) };
-                            // stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            let answer = unsafe { div.call(x, y) };
+                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
                         }
                     }
                 }
@@ -83,22 +98,19 @@ pub struct CodeGen<'ctx> {
     pub context: &'ctx Context,
     pub module: Module<'ctx>,
     pub builder: Builder<'ctx>,
-    pub execution_engine: ExecutionEngine<'ctx>,
 }
 
 type Function = unsafe extern "C" fn(f64, f64) -> f64;
 
 impl<'ctx> CodeGen<'ctx> {
-    pub fn compile_all(&self) -> Option<JitFunction<Function>> {
+    pub fn compile_all(&self) {
         self.compile_sum();
         self.compile_sub();
         self.compile_mul();
         self.compile_div();
-
-        None
     }
 
-    pub fn compile_sum(&self) -> Option<inkwell::values::FunctionValue<'_>> {
+    pub fn compile_sum(&self) {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
         let function = self.module.add_function("sum", fn_type, None);
@@ -115,11 +127,10 @@ impl<'ctx> CodeGen<'ctx> {
             .unwrap();
 
         self.builder.build_return(Some(&sum)).unwrap();
-
-        unsafe { self.module.get_function("sum") }
+        // self.builder.clear_insertion_position();
     }
 
-    fn compile_sub(&self) -> Option<inkwell::values::FunctionValue<'_>> {
+    fn compile_sub(&self) {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
         let function = self.module.add_function("sub", fn_type, None);
@@ -136,11 +147,10 @@ impl<'ctx> CodeGen<'ctx> {
             .unwrap();
 
         self.builder.build_return(Some(&sub)).unwrap();
-
-        unsafe { self.module.get_function("sub") }
+        // self.builder.clear_insertion_position();
     }
 
-    fn compile_mul(&self) -> Option<JitFunction<Function>> {
+    fn compile_mul(&self) {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
         let function = self.module.add_function("mul", fn_type, None);
@@ -157,11 +167,10 @@ impl<'ctx> CodeGen<'ctx> {
             .unwrap();
 
         self.builder.build_return(Some(&mul)).unwrap();
-
-        unsafe { self.execution_engine.get_function("mul").ok() }
+        // self.builder.clear_insertion_position();
     }
 
-    pub fn compile_div(&self) -> Option<JitFunction<Function>> {
+    pub fn compile_div(&self) {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
         let function = self.module.add_function("div", fn_type, None);
@@ -178,7 +187,6 @@ impl<'ctx> CodeGen<'ctx> {
             .unwrap();
 
         self.builder.build_return(Some(&div)).unwrap();
-
-        unsafe { self.execution_engine.get_function("div").ok() }
+        // self.builder.clear_insertion_position();
     }
 }
