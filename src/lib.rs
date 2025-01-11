@@ -19,8 +19,8 @@ pub mod lexer {
     #[derive(Debug, Clone)]
     pub enum Number {
         // TOOD: Add support for later.
-        // FloatingPoint(f64),
-        Integer(isize),
+        FloatingPoint(f64),
+        Integer(usize),
     }
 
     #[derive(Debug, Clone)]
@@ -30,6 +30,25 @@ pub mod lexer {
         Asterisk,
         // /
         Slash,
+    }
+
+    impl Operator {
+        pub fn has_greater_precedence_than(&self, other_op: Self) -> bool {
+            match self {
+                Operator::Plus | Operator::Minus => false,
+                Operator::Asterisk => match other_op {
+                    Operator::Slash | Operator::Asterisk => false,
+                    _ => true,
+                },
+                Operator::Slash => {
+                    if let Operator::Slash = other_op {
+                        false
+                    } else {
+                        true
+                    }
+                }
+            }
+        }
     }
 
     pub struct Lexer<'a> {
@@ -86,8 +105,8 @@ pub mod lexer {
                 '(' => return Some(Token::LeftParen),
                 ')' => return Some(Token::RightParen),
                 '0'..'9' => {
-                    return Some(Token::Numeric(Number::Integer(
-                        character.to_digit(10).unwrap() as isize,
+                    return Some(Token::Numeric(Number::FloatingPoint(
+                        character.to_digit(10).unwrap() as f64,
                     )))
                 }
                 '+' => return Some(Token::Op(Operator::Plus)),

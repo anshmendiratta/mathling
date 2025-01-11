@@ -146,6 +146,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 
 [[package]]
+name = "lispling"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "inkwell",
+ "miette",
+ "nom",
+ "nom_locate",
+ "tracing",
+]
+
+[[package]]
 name = "llvm-sys"
 version = "180.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -157,18 +169,6 @@ dependencies = [
  "libc",
  "regex-lite",
  "semver",
-]
-
-[[package]]
-name = "make_lang"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "inkwell",
- "miette",
- "nom",
- "nom_locate",
- "tracing",
 ]
 
 [[package]]
