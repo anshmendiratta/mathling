@@ -20,7 +20,7 @@ fn token_arr_to_number(numbers: &Vec<&Token>) -> f64 {
             }
         })
         .enumerate()
-        .fold(0, |acc: i32, n: (usize, f64)| acc * 10 + n.1 as i32);
+        .fold(0, |acc: i32, n: (usize, f64)|/* can do 10x each iter because n.1 is always a single-digit number */ acc * 10 + n.1 as i32);
 
     grouped_number as f64
 }
