@@ -4,8 +4,10 @@ use inkwell::{
     execution_engine::{ExecutionEngine, JitFunction},
     module::Module,
 };
+use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
 use crate::{
+    error::BadParenthesesError,
     lexer::{Lexer, Number, Operator, Token},
     parse::Parser,
 };
@@ -15,15 +17,16 @@ pub struct Compiler<'ctx> {
     lexer: Lexer<'ctx>,
 }
 
+type Function = unsafe extern "C" fn(f64, f64) -> f64;
+
 impl<'ctx> Compiler<'ctx> {
     pub fn new(src: &'ctx str, codegen: CodeGen<'ctx>, lexer: Lexer<'ctx>) -> Self {
         let lexer = Lexer::new(src);
-
         Self { codegen, lexer }
     }
 
-    pub fn run(self) -> Number {
-        let lexed_tokens = self.lexer.lex();
+    pub fn run(mut self) -> Result<Number> {
+        let lexed_tokens = self.lexer.lex()?;
         let parser = Parser::new(lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn();
 
@@ -51,13 +54,13 @@ impl<'ctx> Compiler<'ctx> {
                 Token::Op(op) => {
                     // Made `mut` so they can be made into floats if the operator is division.
                     let mut y = match stack.pop() {
-                        Some(Token::Numeric(Number::FloatingPoint(n))) => n,
+                        Some(Token::Numeric(Number(n))) => n,
                         _ => {
                             panic!("Ill-formed expression.")
                         }
                     };
                     let mut x = match stack.pop() {
-                        Some(Token::Numeric(Number::FloatingPoint(n))) => n,
+                        Some(Token::Numeric(Number(n))) => n,
                         _ => {
                             panic!("Ill-formed expression.")
                         }
@@ -65,19 +68,19 @@ impl<'ctx> Compiler<'ctx> {
                     match op {
                         Operator::Plus => {
                             let answer = unsafe { sum.call(x, y) };
-                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            stack.push(Token::Numeric(Number(answer)));
                         }
                         Operator::Minus => {
                             let answer = unsafe { sub.call(x, y) };
-                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            stack.push(Token::Numeric(Number(answer)));
                         }
                         Operator::Asterisk => {
                             let answer = unsafe { mul.call(x, y) };
-                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            stack.push(Token::Numeric(Number(answer)));
                         }
                         Operator::Slash => {
                             let answer = unsafe { div.call(x, y) };
-                            stack.push(Token::Numeric(Number::FloatingPoint(answer)));
+                            stack.push(Token::Numeric(Number(answer)));
                         }
                     }
                 }
@@ -86,10 +89,21 @@ impl<'ctx> Compiler<'ctx> {
         }
 
         if stack.len() != 1 {
-            panic!("Error: After eval, tokens remain. Bad expression?")
-        };
+            let column = &self
+                .lexer
+                .src()
+                .find(stack[1].to_string().as_bytes()[0] as char)
+                .unwrap();
+            Err(BadParenthesesError {
+                src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
+                err_span: {
+                    let start = SourceOffset::from_location(self.lexer.src(), 1, *column);
+                    SourceSpan::new(start, 1)
+                },
+            })?;
+        }
         match stack[0].clone() {
-            Token::Numeric(n) => return n,
+            Token::Numeric(n) => Ok(n),
             _ => panic!("Error: After eval, last token is NOT a number."),
         }
     }
@@ -101,9 +115,7 @@ pub struct CodeGen<'ctx> {
     pub builder: Builder<'ctx>,
 }
 
-type Function = unsafe extern "C" fn(f64, f64) -> f64;
-
-impl<'ctx> CodeGen<'ctx> {
+impl CodeGen<'_> {
     pub fn compile_all(&self) {
         self.compile_sum();
         self.compile_sub();
