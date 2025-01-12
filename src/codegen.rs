@@ -27,12 +27,14 @@ impl<'ctx> Compiler<'ctx> {
         let parser = Parser::new(lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn();
 
-        let _ = &self.codegen.compile_all();
+        self.codegen.compile_all();
         let execution_engine: ExecutionEngine<'ctx> = self
             .codegen
             .module
-            .create_jit_execution_engine(inkwell::OptimizationLevel::None)
+            .create_jit_execution_engine(inkwell::OptimizationLevel::Aggressive)
             .unwrap();
+
+        // Need to get all functions here because doing so compiles the module. For some reason, you can not recompile the module after the first time.
         let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
             as JitFunction<'ctx, Function>;
         let sub = { unsafe { execution_engine.get_function("sub").ok().unwrap() } }
