@@ -18,5 +18,6 @@ Currently supported syntax:
 
 ## Goals
 - [ ] Parse parentheses
+- [ ] Add support for floating point numbers as input
 - [ ] Add external links to custom functions
 - [ ] Add command line configuration arguments (such as how many floating point decimals to print)
