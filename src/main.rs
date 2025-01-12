@@ -1,12 +1,11 @@
-use anyhow::Result;
-
 use inkwell::context::Context;
-use lispling::{
+
+use mathling::{
     codegen::{CodeGen, Compiler},
     lexer::Lexer,
 };
 
-fn main() -> Result<()> {
+fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         panic!("usage: need a quoted math expression to evaluate");
@@ -26,6 +25,4 @@ fn main() -> Result<()> {
     let output = compiler.run();
 
     println!("Result: {}", output);
-
-    Ok(())
 }
