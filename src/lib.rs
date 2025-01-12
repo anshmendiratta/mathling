@@ -139,7 +139,7 @@ pub mod lexer {
             match character {
                 '(' => return Some(Token::LeftParen),
                 ')' => return Some(Token::RightParen),
-                '0'..'9' => {
+                '0'..='9' => {
                     return Some(Token::Numeric(Number::FloatingPoint(
                         character.to_digit(10).unwrap() as f64,
                     )))
