@@ -17,8 +17,6 @@ pub struct Compiler<'ctx> {
     lexer: Lexer<'ctx>,
 }
 
-type Function = unsafe extern "C" fn(f64, f64) -> f64;
-
 impl<'ctx> Compiler<'ctx> {
     pub fn new(src: &'ctx str, codegen: CodeGen<'ctx>, lexer: Lexer<'ctx>) -> Self {
         let lexer = Lexer::new(src);
@@ -30,13 +28,14 @@ impl<'ctx> Compiler<'ctx> {
         let parser = Parser::new(lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn();
 
-        self.codegen.compile_all();
+        self.codegen.compile_all_fns();
         let execution_engine: ExecutionEngine<'ctx> = self
             .codegen
             .module
             .create_jit_execution_engine(inkwell::OptimizationLevel::Aggressive)
             .unwrap();
 
+        type Function = unsafe extern "C" fn(f64, f64) -> f64;
         // Need to get all functions here because doing so compiles the module. For some reason, you can not recompile the module after the first time.
         let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
             as JitFunction<'ctx, Function>;
@@ -116,7 +115,7 @@ pub struct CodeGen<'ctx> {
 }
 
 impl CodeGen<'_> {
-    pub fn compile_all(&self) {
+    pub fn compile_all_fns(&self) {
         self.compile_sum();
         self.compile_sub();
         self.compile_mul();
@@ -140,7 +139,6 @@ impl CodeGen<'_> {
             .unwrap();
 
         self.builder.build_return(Some(&sum)).unwrap();
-        // self.builder.clear_insertion_position();
     }
 
     fn compile_sub(&self) {
@@ -160,7 +158,6 @@ impl CodeGen<'_> {
             .unwrap();
 
         self.builder.build_return(Some(&sub)).unwrap();
-        // self.builder.clear_insertion_position();
     }
 
     fn compile_mul(&self) {
@@ -180,7 +177,6 @@ impl CodeGen<'_> {
             .unwrap();
 
         self.builder.build_return(Some(&mul)).unwrap();
-        // self.builder.clear_insertion_position();
     }
 
     pub fn compile_div(&self) {
@@ -200,6 +196,5 @@ impl CodeGen<'_> {
             .unwrap();
 
         self.builder.build_return(Some(&div)).unwrap();
-        // self.builder.clear_insertion_position();
     }
 }

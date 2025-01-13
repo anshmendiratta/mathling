@@ -13,6 +13,7 @@ fn main() -> Result<()> {
     }
 
     let expr = args[1].clone();
+    assert!(expr.len() > 0, "Expression cannot be empty.");
 
     let ctx = Context::create();
     let module = ctx.create_module("primary");
