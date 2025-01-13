@@ -1,29 +1,35 @@
-use crate::lexer::{Number, Operator, Token};
+use miette::{NamedSource, Result, SourceOffset, SourceSpan};
+
+use crate::{
+    error::UnexpectedTokenError,
+    lexer::{Number, Operator, Token, TokenKind},
+};
 
 struct Expression {
     operands: (Number, Number),
     operator: Operator,
 }
 
-pub struct Parser {
+pub struct Parser<'a> {
+    src: &'a str,
     tokens: Vec<Token>,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
+impl<'a> Parser<'a> {
+    pub fn new(src: &'a str, tokens: Vec<Token>) -> Self {
+        Self { src, tokens }
     }
 
-    pub fn parse_as_rpn(&self) -> Vec<Token> {
+    pub fn parse_as_rpn(&self) -> Result<Vec<Token>> {
         let mut output_queue: Vec<Token> = vec![];
-        let mut operator_stack: Vec<Operator> = vec![];
+        let mut operator_stack: Vec<Token> = vec![];
 
         for token in self.tokens.clone() {
-            match token {
-                Token::Numeric(_) => output_queue.push(token),
-                Token::Op(o_1) => {
+            match token.kind {
+                TokenKind::Numeric(_) => output_queue.push(token),
+                TokenKind::Op(ref o_1) => {
                     if operator_stack.last().is_none() {
-                        operator_stack.push(o_1);
+                        operator_stack.push(token);
                         continue;
                     }
 
@@ -31,27 +37,45 @@ impl Parser {
                     // /
                     // *
                     // +, -
-                    while operator_stack
-                        .last()
-                        .is_some_and(|o_2| o_2.has_greater_precedence_than(o_1.clone()))
-                    {
+                    while operator_stack.last().is_some_and(|o_2| match o_2 {
+                        Token {
+                            kind: TokenKind::Op(o_2),
+                            ..
+                        } => o_2.has_greater_precedence_than(&o_1.clone()),
+                        _ => panic!(""),
+                    }) {
                         let o_2 = operator_stack.pop().unwrap();
-                        output_queue.push(Token::Op(o_2));
+                        output_queue.push(token.clone());
                     }
 
-                    operator_stack.push(o_1);
+                    operator_stack.push(token.clone());
+                }
+                TokenKind::LeftParen => operator_stack.push(token),
+                TokenKind::RightParen => {
+                    if operator_stack.is_empty() {
+                        Err(UnexpectedTokenError {
+                            src: NamedSource::new("mathexpr", self.src.to_owned()),
+                            err_span: {
+                                let start = SourceOffset::from_location(self.src, 1, 1);
+                                SourceSpan::new(start, 1)
+                            },
+                        })?;
+                    }
                 }
                 _ => (),
             }
         }
 
         operator_stack.reverse();
-        let mut operator_stack_as_tokens: Vec<Token> = operator_stack
-            .iter()
-            .map(|op| Token::Op(op.clone()))
-            .collect();
-        output_queue.append(&mut operator_stack_as_tokens);
+        // let mut operator_stack_as_tokens: Vec<Token> = operator_stack
+        //     .iter()
+        //     .map(|op| Token {
+        //         kind: TokenKind::Op(op.clone()),
+        //         col: op.col,
+        //     })
+        //     .collect();
+        output_queue.append(&mut operator_stack);
 
-        output_queue
+        Ok(output_queue)
     }
 }

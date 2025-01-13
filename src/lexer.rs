@@ -3,7 +3,13 @@ use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 use crate::{error::UnexpectedTokenError, token_arr_to_number};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token {
+pub struct Token {
+    pub kind: TokenKind,
+    pub col: usize,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TokenKind {
     LeftParen,
     RightParen,
     Numeric(Number),
@@ -11,14 +17,14 @@ pub enum Token {
     Op(Operator),
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::LeftParen => f.write_str("("),
-            Token::RightParen => f.write_str(")"),
-            Token::Numeric(number) => f.write_str(&number.to_string()),
-            Token::Whitespace => f.write_str(" "),
-            Token::Op(operator) => f.write_str(&operator.to_string()),
+            TokenKind::LeftParen => f.write_str("("),
+            TokenKind::RightParen => f.write_str(")"),
+            TokenKind::Numeric(number) => f.write_str(&number.to_string()),
+            TokenKind::Whitespace => f.write_str(" "),
+            TokenKind::Op(operator) => f.write_str(&operator.to_string()),
         }
     }
 }
@@ -39,16 +45,18 @@ pub enum Operator {
     Plus,
     Minus,
     Asterisk,
-    // /
     Slash,
+    LeftParen,
+    RightParen,
 }
 
 impl Operator {
-    pub fn has_greater_precedence_than(&self, other_op: Self) -> bool {
+    pub fn has_greater_precedence_than(&self, other_op: &Self) -> bool {
         match self {
             Operator::Plus | Operator::Minus => false,
             Operator::Asterisk => !matches!(other_op, Operator::Slash | Operator::Asterisk),
             Operator::Slash => !matches!(other_op, Operator::Slash),
+            _ => panic!("Invalid operator found"),
         }
     }
 }
@@ -60,6 +68,8 @@ impl std::fmt::Display for Operator {
             Operator::Minus => f.write_str("-"),
             Operator::Asterisk => f.write_str("*"),
             Operator::Slash => f.write_str("/"),
+            Operator::LeftParen => f.write_str("("),
+            Operator::RightParen => f.write_str(")"),
         }
     }
 }
@@ -67,6 +77,7 @@ impl std::fmt::Display for Operator {
 pub struct Lexer<'a> {
     src: &'a str,
     current_token: Option<char>,
+    current_idx: usize,
     rest: &'a str,
 }
 
@@ -75,24 +86,28 @@ impl<'a> Lexer<'a> {
         Self {
             src: expr_as_string,
             current_token: None,
+            current_idx: 0,
             rest: expr_as_string,
         }
     }
 
     pub fn lex(&mut self) -> Result<Vec<Token>> {
-        let mut tokens = vec![];
+        let mut tokens: Vec<Token> = vec![];
 
         self.advance();
         while self.current_token.is_some() {
             match self.tokenize_character(self.current_token.unwrap()) {
                 Some(t) => {
                     // Ignore whitespace as a token.
-                    if let Token::Whitespace = t {
+                    if let TokenKind::Whitespace = t {
                         // Need this so does not end in an infinite loop.
                         self.advance();
                         continue;
                     }
-                    tokens.push(t)
+                    tokens.push(Token {
+                        kind: t,
+                        col: self.current_idx,
+                    })
                 }
                 _ => {
                     let column = self.src.find(self.current_token.unwrap()).unwrap() + 1;
@@ -118,16 +133,32 @@ impl<'a> Lexer<'a> {
 
         for token in &tokens {
             if tokens_to_eat == 0 {
-                tokens_to_group.push(token);
+                match token.kind {
+                    TokenKind::LeftParen | TokenKind::RightParen => (),
+                    _ => tokens_to_group.push(token),
+                }
                 let grouped_number = token_arr_to_number(&tokens_to_group);
-                grouped_tokens.push(Token::Numeric(Number(grouped_number)));
+                grouped_tokens.push(Token {
+                    kind: TokenKind::Numeric(Number(grouped_number)),
+                    col: token.col,
+                });
                 break;
             };
             match token {
-                Token::Numeric(_) => tokens_to_group.push(token),
+                Token {
+                    kind: TokenKind::Numeric(_),
+                    ..
+                } => tokens_to_group.push(token),
+                Token {
+                    kind: TokenKind::RightParen | TokenKind::LeftParen,
+                    ..
+                } => grouped_tokens.push(token.clone()),
                 _ => {
                     let grouped_number = token_arr_to_number(&tokens_to_group);
-                    grouped_tokens.push(Token::Numeric(Number(grouped_number)));
+                    grouped_tokens.push(Token {
+                        kind: TokenKind::Numeric(Number(grouped_number)),
+                        col: token.col,
+                    });
                     grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
                 }
@@ -138,18 +169,18 @@ impl<'a> Lexer<'a> {
         Ok(grouped_tokens)
     }
 
-    fn tokenize_character(&mut self, character: char) -> Option<Token> {
+    fn tokenize_character(&mut self, character: char) -> Option<TokenKind> {
         match character {
-            '(' => Some(Token::LeftParen),
-            ')' => Some(Token::RightParen),
-            '0'..='9' => Some(Token::Numeric(Number(
+            '(' => Some(TokenKind::LeftParen),
+            ')' => Some(TokenKind::RightParen),
+            '0'..='9' => Some(TokenKind::Numeric(Number(
                 character.to_digit(10).unwrap() as f64
             ))),
-            '+' => Some(Token::Op(Operator::Plus)),
-            '-' => Some(Token::Op(Operator::Minus)),
-            '*' => Some(Token::Op(Operator::Asterisk)),
-            '/' => Some(Token::Op(Operator::Slash)),
-            ' ' => Some(Token::Whitespace),
+            '+' => Some(TokenKind::Op(Operator::Plus)),
+            '-' => Some(TokenKind::Op(Operator::Minus)),
+            '*' => Some(TokenKind::Op(Operator::Asterisk)),
+            '/' => Some(TokenKind::Op(Operator::Slash)),
+            ' ' => Some(TokenKind::Whitespace),
             _ => None,
         }
     }
@@ -158,6 +189,7 @@ impl<'a> Lexer<'a> {
         if !self.rest.is_empty() {
             self.current_token = Some(self.rest.as_bytes()[0] as char);
             self.rest = &self.rest[1..];
+            self.current_idx += 1;
             self.current_token
         } else {
             self.current_token = None;

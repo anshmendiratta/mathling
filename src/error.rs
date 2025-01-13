@@ -23,3 +23,16 @@ pub struct BadParenthesesError {
     #[label("here")]
     pub err_span: SourceSpan,
 }
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Invalid operator here")]
+#[diagnostic(
+    code("Invalid operators found during parsing"),
+    help("Try removing this")
+)]
+pub struct InvalidOperatorError {
+    #[source_code]
+    pub src: NamedSource<String>,
+    #[label("here")]
+    pub err_span: SourceSpan,
+}

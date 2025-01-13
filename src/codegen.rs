@@ -7,8 +7,8 @@ use inkwell::{
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
 use crate::{
-    error::BadParenthesesError,
-    lexer::{Lexer, Number, Operator, Token},
+    error::{BadParenthesesError, InvalidOperatorError},
+    lexer::{Lexer, Number, Operator, Token, TokenKind},
     parse::Parser,
 };
 
@@ -25,8 +25,9 @@ impl<'ctx> Compiler<'ctx> {
 
     pub fn run(mut self) -> Result<Number> {
         let lexed_tokens = self.lexer.lex()?;
-        let parser = Parser::new(lexed_tokens);
-        let rpn_tokens = parser.parse_as_rpn();
+        let src = self.lexer.src();
+        let parser = Parser::new(&src, lexed_tokens);
+        let rpn_tokens = parser.parse_as_rpn()?;
 
         self.codegen.compile_all_fns();
         let execution_engine: ExecutionEngine<'ctx> = self
@@ -46,20 +47,32 @@ impl<'ctx> Compiler<'ctx> {
         let div = { unsafe { execution_engine.get_function("div").ok().unwrap() } }
             as JitFunction<'ctx, Function>;
 
-        let mut stack = vec![];
+        let mut stack: Vec<Token> = vec![];
         for token in rpn_tokens {
             match token {
-                Token::Numeric(_) => stack.push(token),
-                Token::Op(op) => {
+                Token {
+                    kind: TokenKind::Numeric(ref n),
+                    ..
+                } => stack.push(token),
+                Token {
+                    kind: TokenKind::Op(op),
+                    ..
+                } => {
                     // Made `mut` so they can be made into floats if the operator is division.
                     let mut y = match stack.pop() {
-                        Some(Token::Numeric(Number(n))) => n,
+                        Some(Token {
+                            kind: TokenKind::Numeric(Number(n)),
+                            ..
+                        }) => n,
                         _ => {
                             panic!("Ill-formed expression.")
                         }
                     };
                     let mut x = match stack.pop() {
-                        Some(Token::Numeric(Number(n))) => n,
+                        Some(Token {
+                            kind: TokenKind::Numeric(Number(n)),
+                            ..
+                        }) => n,
                         _ => {
                             panic!("Ill-formed expression.")
                         }
@@ -67,20 +80,40 @@ impl<'ctx> Compiler<'ctx> {
                     match op {
                         Operator::Plus => {
                             let answer = unsafe { sum.call(x, y) };
-                            stack.push(Token::Numeric(Number(answer)));
+                            stack.push(Token {
+                                kind: TokenKind::Numeric(Number(answer)),
+                                col: token.col,
+                            });
                         }
                         Operator::Minus => {
                             let answer = unsafe { sub.call(x, y) };
-                            stack.push(Token::Numeric(Number(answer)));
+                            stack.push(Token {
+                                kind: TokenKind::Numeric(Number(answer)),
+                                col: token.col,
+                            });
                         }
                         Operator::Asterisk => {
                             let answer = unsafe { mul.call(x, y) };
-                            stack.push(Token::Numeric(Number(answer)));
+                            stack.push(Token {
+                                kind: TokenKind::Numeric(Number(answer)),
+                                col: token.col,
+                            });
                         }
                         Operator::Slash => {
                             let answer = unsafe { div.call(x, y) };
-                            stack.push(Token::Numeric(Number(answer)));
+                            stack.push(Token {
+                                kind: TokenKind::Numeric(Number(answer)),
+                                col: token.col,
+                            });
                         }
+                        _ => Err(InvalidOperatorError {
+                            src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
+                            err_span: {
+                                let start =
+                                    SourceOffset::from_location(self.lexer.src(), 1, token.col);
+                                SourceSpan::new(start, 1)
+                            },
+                        })?,
                     }
                 }
                 _ => (),
@@ -91,7 +124,7 @@ impl<'ctx> Compiler<'ctx> {
             let column = &self
                 .lexer
                 .src()
-                .find(stack[1].to_string().as_bytes()[0] as char)
+                .find(stack[1].kind.to_string().as_bytes()[0] as char)
                 .unwrap();
             Err(BadParenthesesError {
                 src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
@@ -102,7 +135,10 @@ impl<'ctx> Compiler<'ctx> {
             })?;
         }
         match stack[0].clone() {
-            Token::Numeric(n) => Ok(n),
+            Token {
+                kind: TokenKind::Numeric(n),
+                ..
+            } => Ok(n),
             _ => panic!("Error: After eval, last token is NOT a number."),
         }
     }

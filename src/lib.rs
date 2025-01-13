@@ -2,7 +2,8 @@
 #![allow(unused_mut)]
 #![allow(dead_code)]
 
-use lexer::{Number, Token};
+use crate::lexer::Token;
+use lexer::{Number, TokenKind};
 
 pub mod codegen;
 pub mod error;
@@ -13,7 +14,7 @@ fn token_arr_to_number(numbers: &Vec<&Token>) -> f64 {
     let grouped_number = numbers
         .iter()
         .map(|t| {
-            if let Token::Numeric(Number(fp)) = t {
+            if let Token { kind: TokenKind::Numeric(Number(fp)), ..} = t {
                 *fp
             } else {
                 panic!("Error: somehow pushed a not-number in tokens_to_group.");
