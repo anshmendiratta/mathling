@@ -77,6 +77,19 @@ impl<'a> Parser<'a> {
             }
         }
 
+        if operator_stack
+            .first()
+            .is_some_and(|t| t.kind == TokenKind::LeftParen || t.kind == TokenKind::RightParen)
+        {
+            Err(BadParenthesesError {
+                src: NamedSource::new("mathexpr", self.src.to_owned()),
+                err_span: {
+                    let start = SourceOffset::from_location(self.src, 1, 1);
+                    SourceSpan::new(start, 1)
+                },
+            })?;
+        }
+
         operator_stack.reverse();
         output_queue.append(&mut operator_stack);
 

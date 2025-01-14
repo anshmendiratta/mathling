@@ -129,11 +129,8 @@ impl<'a> Lexer<'a> {
             let tokens_to_eat = tokens.len() - i - 1;
             if tokens_to_eat == 0 {
                 match token.kind {
-                    TokenKind::Numeric(_) => grouped_tokens.push(token.clone()),
+                    TokenKind::Numeric(_) => tokens_to_group.push(token.clone()),
                     _ => (),
-                }
-                if let TokenKind::Numeric(_) = token.kind {
-                    tokens_to_group.push(token.clone());
                 }
                 if !tokens_to_group.is_empty() {
                     let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
