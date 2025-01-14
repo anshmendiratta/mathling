@@ -10,7 +10,7 @@ pub mod error;
 pub mod lexer;
 pub mod parse;
 
-fn token_arr_to_number(numbers: &Vec<&Token>) -> f64 {
+fn token_arr_to_number(numbers: &Vec<Token>) -> f64 {
     let grouped_number = numbers
         .iter()
         .map(|t| {

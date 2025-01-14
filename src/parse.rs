@@ -1,7 +1,7 @@
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
 use crate::{
-    error::UnexpectedTokenError,
+    error::{BadParenthesesError, UnexpectedTokenError},
     lexer::{Number, Operator, Token, TokenKind},
 };
 
@@ -20,11 +20,11 @@ impl<'a> Parser<'a> {
         Self { src, tokens }
     }
 
-    pub fn parse_as_rpn(&self) -> Result<Vec<Token>> {
+    pub fn parse_as_rpn(self) -> Result<Vec<Token>> {
         let mut output_queue: Vec<Token> = vec![];
         let mut operator_stack: Vec<Token> = vec![];
 
-        for token in self.tokens.clone() {
+        for token in self.tokens {
             match token.kind {
                 TokenKind::Numeric(_) => output_queue.push(token),
                 TokenKind::Op(ref o_1) => {
@@ -41,19 +41,19 @@ impl<'a> Parser<'a> {
                         Token {
                             kind: TokenKind::Op(o_2),
                             ..
-                        } => o_2.has_greater_precedence_than(&o_1.clone()),
+                        } => o_2.has_greater_precedence_than(&o_1),
                         _ => panic!(""),
                     }) {
                         let o_2 = operator_stack.pop().unwrap();
-                        output_queue.push(token.clone());
+                        output_queue.push(o_2);
                     }
 
-                    operator_stack.push(token.clone());
+                    operator_stack.push(token);
                 }
                 TokenKind::LeftParen => operator_stack.push(token),
                 TokenKind::RightParen => {
                     if operator_stack.is_empty() {
-                        Err(UnexpectedTokenError {
+                        Err(BadParenthesesError {
                             src: NamedSource::new("mathexpr", self.src.to_owned()),
                             err_span: {
                                 let start = SourceOffset::from_location(self.src, 1, 1);
@@ -67,13 +67,6 @@ impl<'a> Parser<'a> {
         }
 
         operator_stack.reverse();
-        // let mut operator_stack_as_tokens: Vec<Token> = operator_stack
-        //     .iter()
-        //     .map(|op| Token {
-        //         kind: TokenKind::Op(op.clone()),
-        //         col: op.col,
-        //     })
-        //     .collect();
         output_queue.append(&mut operator_stack);
 
         Ok(output_queue)

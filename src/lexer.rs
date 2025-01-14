@@ -110,11 +110,10 @@ impl<'a> Lexer<'a> {
                     })
                 }
                 _ => {
-                    let column = self.src.find(self.current_token.unwrap()).unwrap() + 1;
                     Err(UnexpectedTokenError {
                         src: NamedSource::new("mathexpr", self.src.to_owned()),
                         err_span: {
-                            let start = SourceOffset::from_location(self.src, 1, column);
+                            let start = SourceOffset::from_location(self.src, 1, self.current_idx);
                             SourceSpan::new(start, 1)
                         },
                     })?;
@@ -128,14 +127,14 @@ impl<'a> Lexer<'a> {
         // Similar to the evaluation of RPN, this adds numbers to a vector until it reaches an operator or another token.
         // Then, it tries to unify each digit into one number and pushes it to a final token vector along with the operator.
         let mut grouped_tokens: Vec<Token> = vec![];
-        let mut tokens_to_group: Vec<&Token> = vec![];
+        let mut tokens_to_group: Vec<Token> = vec![];
         let mut tokens_to_eat = tokens.len() - 1;
 
-        for token in &tokens {
+        for token in tokens {
             if tokens_to_eat == 0 {
                 match token.kind {
-                    TokenKind::LeftParen | TokenKind::RightParen => (),
-                    _ => tokens_to_group.push(token),
+                    TokenKind::LeftParen | TokenKind::RightParen => continue,
+                    _ => tokens_to_group.push(token.clone()),
                 }
                 let grouped_number = token_arr_to_number(&tokens_to_group);
                 grouped_tokens.push(Token {
@@ -152,14 +151,14 @@ impl<'a> Lexer<'a> {
                 Token {
                     kind: TokenKind::RightParen | TokenKind::LeftParen,
                     ..
-                } => grouped_tokens.push(token.clone()),
+                } => grouped_tokens.push(token),
                 _ => {
                     let grouped_number = token_arr_to_number(&tokens_to_group);
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
                         col: token.col,
                     });
-                    grouped_tokens.push(token.clone());
+                    grouped_tokens.push(token);
                     tokens_to_group.clear();
                 }
             }
@@ -199,5 +198,9 @@ impl<'a> Lexer<'a> {
 
     pub fn src(&self) -> String {
         self.src.to_owned()
+    }
+
+    pub fn current_idx(&self) -> usize {
+        self.current_idx
     }
 }

@@ -7,7 +7,7 @@ use inkwell::{
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
 use crate::{
-    error::{BadParenthesesError, InvalidOperatorError},
+    error::InvalidOperatorError,
     lexer::{Lexer, Number, Operator, Token, TokenKind},
     parse::Parser,
 };
@@ -120,25 +120,12 @@ impl<'ctx> Compiler<'ctx> {
             }
         }
 
-        if stack.len() != 1 {
-            let column = &self
-                .lexer
-                .src()
-                .find(stack[1].kind.to_string().as_bytes()[0] as char)
-                .unwrap();
-            Err(BadParenthesesError {
-                src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
-                err_span: {
-                    let start = SourceOffset::from_location(self.lexer.src(), 1, *column);
-                    SourceSpan::new(start, 1)
-                },
-            })?;
-        }
-        match stack[0].clone() {
+        assert!(stack.len() == 1, "Evaluator stack is not of length 1");
+        match stack.first().unwrap() {
             Token {
-                kind: TokenKind::Numeric(n),
+                kind: TokenKind::Numeric(ref n),
                 ..
-            } => Ok(n),
+            } => Ok(n.clone()),
             _ => panic!("Error: After eval, last token is NOT a number."),
         }
     }
