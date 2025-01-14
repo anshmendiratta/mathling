@@ -1,7 +1,7 @@
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
 use crate::{
-    error::{BadParenthesesError, UnexpectedTokenError},
+    error::BadParenthesesError,
     lexer::{Number, Operator, Token, TokenKind},
 };
 
@@ -32,16 +32,15 @@ impl<'a> Parser<'a> {
                         operator_stack.push(token);
                         continue;
                     }
-
-                    // Operator precedence:
-                    // /
-                    // *
-                    // +, -
                     while operator_stack.last().is_some_and(|o_2| match o_2 {
                         Token {
                             kind: TokenKind::Op(o_2),
                             ..
                         } => o_2.has_greater_precedence_than(&o_1),
+                        Token {
+                            kind: TokenKind::LeftParen | TokenKind::RightParen,
+                            ..
+                        } => false,
                         _ => panic!(""),
                     }) {
                         let o_2 = operator_stack.pop().unwrap();
@@ -61,8 +60,20 @@ impl<'a> Parser<'a> {
                             },
                         })?;
                     }
+                    while operator_stack
+                        .last()
+                        .is_some_and(|t| t.kind != TokenKind::LeftParen)
+                    {
+                        let last_op = operator_stack.pop().unwrap();
+                        output_queue.push(last_op);
+                    }
+                    assert!(operator_stack
+                        .last()
+                        .is_some_and(|t| t.kind == TokenKind::LeftParen));
+
+                    operator_stack.pop();
                 }
-                _ => (),
+                _ => {}
             }
         }
 

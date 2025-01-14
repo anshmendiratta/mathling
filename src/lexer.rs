@@ -77,7 +77,7 @@ impl std::fmt::Display for Operator {
 pub struct Lexer<'a> {
     src: &'a str,
     current_token: Option<char>,
-    current_idx: usize,
+    current_col: usize,
     rest: &'a str,
 }
 
@@ -86,7 +86,7 @@ impl<'a> Lexer<'a> {
         Self {
             src: expr_as_string,
             current_token: None,
-            current_idx: 0,
+            current_col: 0,
             rest: expr_as_string,
         }
     }
@@ -97,29 +97,26 @@ impl<'a> Lexer<'a> {
         self.advance();
         while self.current_token.is_some() {
             match self.tokenize_character(self.current_token.unwrap()) {
-                Some(t) => {
-                    // Ignore whitespace as a token.
-                    if let TokenKind::Whitespace = t {
-                        // Need this so does not end in an infinite loop.
-                        self.advance();
+                Some(tk) => {
+                    // Don't tokenize whitespaces.
+                    if let TokenKind::Whitespace = tk {
                         continue;
                     }
                     tokens.push(Token {
-                        kind: t,
-                        col: self.current_idx,
-                    })
+                        kind: tk,
+                        col: self.current_col,
+                    });
                 }
                 _ => {
                     Err(UnexpectedTokenError {
                         src: NamedSource::new("mathexpr", self.src.to_owned()),
                         err_span: {
-                            let start = SourceOffset::from_location(self.src, 1, self.current_idx);
+                            let start = SourceOffset::from_location(self.src, 1, self.current_col);
                             SourceSpan::new(start, 1)
                         },
                     })?;
                 }
             };
-
             self.advance();
         }
 
@@ -128,41 +125,48 @@ impl<'a> Lexer<'a> {
         // Then, it tries to unify each digit into one number and pushes it to a final token vector along with the operator.
         let mut grouped_tokens: Vec<Token> = vec![];
         let mut tokens_to_group: Vec<Token> = vec![];
-        let mut tokens_to_eat = tokens.len() - 1;
-
-        for token in tokens {
+        for (i, token) in tokens.iter().enumerate() {
+            let tokens_to_eat = tokens.len() - i - 1;
             if tokens_to_eat == 0 {
                 match token.kind {
-                    TokenKind::LeftParen | TokenKind::RightParen => continue,
-                    _ => tokens_to_group.push(token.clone()),
+                    TokenKind::Numeric(_) => grouped_tokens.push(token.clone()),
+                    _ => (),
                 }
-                let grouped_number = token_arr_to_number(&tokens_to_group);
-                grouped_tokens.push(Token {
-                    kind: TokenKind::Numeric(Number(grouped_number)),
-                    col: token.col,
-                });
+                if let TokenKind::Numeric(_) = token.kind {
+                    tokens_to_group.push(token.clone());
+                }
+                if !tokens_to_group.is_empty() {
+                    let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                    grouped_tokens.push(Token {
+                        kind: TokenKind::Numeric(Number(grouped_number)),
+                        col: col_to_use,
+                    });
+                }
+                match token.kind {
+                    TokenKind::Numeric(_) => (),
+                    _ => grouped_tokens.push(token.clone()),
+                }
                 break;
             };
             match token {
                 Token {
                     kind: TokenKind::Numeric(_),
                     ..
-                } => tokens_to_group.push(token),
+                } => tokens_to_group.push(token.clone()),
                 Token {
                     kind: TokenKind::RightParen | TokenKind::LeftParen,
                     ..
-                } => grouped_tokens.push(token),
+                } => grouped_tokens.push(token.clone()),
                 _ => {
-                    let grouped_number = token_arr_to_number(&tokens_to_group);
+                    let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
-                        col: token.col,
+                        col: col_to_use,
                     });
-                    grouped_tokens.push(token);
+                    grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
                 }
             }
-            tokens_to_eat -= 1;
         }
 
         Ok(grouped_tokens)
@@ -188,7 +192,7 @@ impl<'a> Lexer<'a> {
         if !self.rest.is_empty() {
             self.current_token = Some(self.rest.as_bytes()[0] as char);
             self.rest = &self.rest[1..];
-            self.current_idx += 1;
+            self.current_col += 1;
             self.current_token
         } else {
             self.current_token = None;
@@ -201,6 +205,6 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn current_idx(&self) -> usize {
-        self.current_idx
+        self.current_col
     }
 }

@@ -26,6 +26,7 @@ impl<'ctx> Compiler<'ctx> {
     pub fn run(mut self) -> Result<Number> {
         let lexed_tokens = self.lexer.lex()?;
         let src = self.lexer.src();
+        dbg!(&lexed_tokens);
         let parser = Parser::new(&src, lexed_tokens);
         let rpn_tokens = parser.parse_as_rpn()?;
 
