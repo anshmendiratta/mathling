@@ -187,7 +187,6 @@ impl<'a> Lexer<'a> {
                 }
             })
             .collect();
-
         let floating_points: Vec<Token> = period_indices
             .iter()
             .map(|(idx, col)| -> Result<Token> {
@@ -224,8 +223,17 @@ impl<'a> Lexer<'a> {
                 })
             })
             .collect::<Result<Vec<Token>>>()?;
+        let tokens_with_fp: Vec<Token> = {
+            let mut pre_tokens = [floating_points, grouped_tokens].concat().to_vec();
+            pre_tokens
+                .iter_mut()
+                .filter(|t| pre_tokens.iter().filter(|pt| pt.col == t.col).count() == 1)
+                .collect::<Vec<Token>>();
+            let mut tokens: Vec<Token> = vec![];
+            tokens
+        };
 
-        Ok(vec![])
+        Ok(floating_points)
         // Ok(floating_points)
     }
 
