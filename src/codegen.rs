@@ -25,10 +25,11 @@ impl<'ctx> Compiler<'ctx> {
 
     pub fn run(mut self) -> Result<Number> {
         let lexed_tokens = self.lexer.lex()?;
-        // dbg!(&lexed_tokens);
+        dbg!(&lexed_tokens);
         let src = self.lexer.src();
         let parser = Parser::new(&src, lexed_tokens);
-        let rpn_tokens = parser.parse_as_rpn()?;
+        let rpn_tokens = parser.parse_into_rpn()?;
+        dbg!(&rpn_tokens);
 
         self.codegen.compile_all_fns();
         let execution_engine: ExecutionEngine<'ctx> = self
@@ -106,15 +107,14 @@ impl<'ctx> Compiler<'ctx> {
                                 kind: TokenKind::Numeric(Number(answer)),
                                 col: token.col,
                             });
-                        }
-                        _ => Err(InvalidOperatorError {
-                            src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
-                            err_span: {
-                                let start =
-                                    SourceOffset::from_location(self.lexer.src(), 1, token.col);
-                                SourceSpan::new(start, 1)
-                            },
-                        })?,
+                        } // _ => Err(InvalidOperatorError {
+                          //     src: NamedSource::new("mathexpr", self.lexer.src().to_owned()),
+                          //     err_span: {
+                          //         let start =
+                          //             SourceOffset::from_location(self.lexer.src(), 1, token.col);
+                          //         SourceSpan::new(start, 1)
+                          //     },
+                          // })?,
                     }
                 }
                 _ => (),

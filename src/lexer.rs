@@ -46,8 +46,6 @@ pub enum Operator {
     Minus,
     Asterisk,
     Slash,
-    LeftParen,
-    RightParen,
 }
 
 impl Operator {
@@ -56,7 +54,6 @@ impl Operator {
             Operator::Plus | Operator::Minus => false,
             Operator::Asterisk => !matches!(other_op, Operator::Slash | Operator::Asterisk),
             Operator::Slash => !matches!(other_op, Operator::Slash),
-            _ => panic!("Invalid operator found"),
         }
     }
 }
@@ -68,8 +65,6 @@ impl std::fmt::Display for Operator {
             Operator::Minus => f.write_str("-"),
             Operator::Asterisk => f.write_str("*"),
             Operator::Slash => f.write_str("/"),
-            Operator::LeftParen => f.write_str("("),
-            Operator::RightParen => f.write_str(")"),
         }
     }
 }
@@ -128,6 +123,10 @@ impl<'a> Lexer<'a> {
         for (i, token) in tokens.iter().enumerate() {
             let tokens_to_eat = tokens.len() - i - 1;
             if tokens_to_eat == 0 {
+                // If no more tokens to add after this:
+                // 1. Add the final token to the stack if it is a:
+                // - Number => Send array to `token_arr_to_number` and append to `grouped_tokens`.
+                // - Other => Append to `grouped_tokens`.
                 match token.kind {
                     TokenKind::Numeric(_) => tokens_to_group.push(token.clone()),
                     _ => (),
@@ -150,16 +149,14 @@ impl<'a> Lexer<'a> {
                     kind: TokenKind::Numeric(_),
                     ..
                 } => tokens_to_group.push(token.clone()),
-                Token {
-                    kind: TokenKind::RightParen | TokenKind::LeftParen,
-                    ..
-                } => grouped_tokens.push(token.clone()),
                 _ => {
-                    let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
-                    grouped_tokens.push(Token {
-                        kind: TokenKind::Numeric(Number(grouped_number)),
-                        col: col_to_use,
-                    });
+                    if !tokens_to_group.is_empty() {
+                        let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                        grouped_tokens.push(Token {
+                            kind: TokenKind::Numeric(Number(grouped_number)),
+                            col: col_to_use,
+                        });
+                    }
                     grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
                 }
