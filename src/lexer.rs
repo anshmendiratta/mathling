@@ -1,6 +1,9 @@
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
-use crate::{error::UnexpectedTokenError, token_arr_to_number};
+use crate::{
+    error::{IncompleteFPError, UnexpectedTokenError},
+    token_arr_to_number,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -14,6 +17,7 @@ pub enum TokenKind {
     RightParen,
     Numeric(Number),
     Whitespace,
+    Period,
     Op(Operator),
 }
 
@@ -25,6 +29,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Numeric(number) => f.write_str(&number.to_string()),
             TokenKind::Whitespace => f.write_str(" "),
             TokenKind::Op(operator) => f.write_str(&operator.to_string()),
+            TokenKind::Period => f.write_str("."),
         }
     }
 }
@@ -90,11 +95,14 @@ impl<'a> Lexer<'a> {
         let mut tokens: Vec<Token> = vec![];
 
         self.advance();
+        self.current_col = 0;
         while self.current_token.is_some() {
             match self.tokenize_character(self.current_token.unwrap()) {
                 Some(tk) => {
                     // Don't tokenize whitespaces.
                     if let TokenKind::Whitespace = tk {
+                        self.advance();
+                        // self.current_col -= 1;
                         continue;
                     }
                     tokens.push(Token {
@@ -115,6 +123,7 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
 
+        // First pass:
         // Group adjacent `Numbers` into a single one.
         // Similar to the evaluation of RPN, this adds numbers to a vector until it reaches an operator or another token.
         // Then, it tries to unify each digit into one number and pushes it to a final token vector along with the operator.
@@ -159,11 +168,65 @@ impl<'a> Lexer<'a> {
                     }
                     grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
+                    continue;
                 }
             }
         }
 
-        Ok(grouped_tokens)
+        // Second pass:
+        // Convert `num, period, num` into `num.num` (lex floating point).
+        // Each (usize, usize) in `period_indices` is a pair of a index in `grouped_tokens` and the `col` in `self.src`.
+        let period_indices: Vec<(usize, usize)> = grouped_tokens
+            .iter()
+            .enumerate()
+            .filter_map(|p| {
+                if p.1.kind == TokenKind::Period {
+                    Some((p.0, p.1.col))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let floating_points: Vec<Token> = period_indices
+            .iter()
+            .map(|(idx, col)| -> Result<Token> {
+                if *idx < 1 as usize || *idx > grouped_tokens.len() - 2 {
+                    Err(IncompleteFPError {
+                        src: NamedSource::new("mathexpr", self.src.to_owned()),
+                        err_span: {
+                            let start = SourceOffset::from_location(self.src, 1, *col + 1);
+                            SourceSpan::new(start, 1)
+                        },
+                    })?
+                }
+
+                let (int, fract) = (
+                    // Because of the above `if`, this will never fail.
+                    grouped_tokens[idx - 1].clone(),
+                    grouped_tokens[idx + 1].clone(),
+                );
+                let number = match (int.kind, fract.kind) {
+                    (TokenKind::Numeric(Number(int)), TokenKind::Numeric(Number(fract))) => {
+                        int + fract / (10_f64.powf(fract.to_string().len() as f64))
+                    }
+                    _ => Err(IncompleteFPError {
+                        src: NamedSource::new("mathexpr", self.src.to_owned()),
+                        err_span: {
+                            let start = SourceOffset::from_location(self.src, 1, *col + 1);
+                            SourceSpan::new(start, 1)
+                        },
+                    })?,
+                };
+                Ok(Token {
+                    kind: TokenKind::Numeric(Number(number)),
+                    col: int.col,
+                })
+            })
+            .collect::<Result<Vec<Token>>>()?;
+
+        Ok(vec![])
+        // Ok(floating_points)
     }
 
     fn tokenize_character(&mut self, character: char) -> Option<TokenKind> {
@@ -178,6 +241,7 @@ impl<'a> Lexer<'a> {
             '*' => Some(TokenKind::Op(Operator::Asterisk)),
             '/' => Some(TokenKind::Op(Operator::Slash)),
             ' ' => Some(TokenKind::Whitespace),
+            '.' => Some(TokenKind::Period),
             _ => None,
         }
     }
