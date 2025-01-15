@@ -1,9 +1,6 @@
 use miette::{NamedSource, Result, SourceOffset, SourceSpan};
 
-use crate::{
-    error::{IncompleteFPError, UnexpectedTokenError},
-    token_arr_to_number,
-};
+use crate::{error::UnexpectedTokenError, token_arr_to_number};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -92,7 +89,7 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn lex(&mut self) -> Result<Vec<Token>> {
-        let mut tokens: Vec<Token> = vec![];
+        let mut single_tokens: Vec<Token> = vec![];
 
         self.advance();
         self.current_col = 0;
@@ -105,7 +102,7 @@ impl<'a> Lexer<'a> {
                         // self.current_col -= 1;
                         continue;
                     }
-                    tokens.push(Token {
+                    single_tokens.push(Token {
                         kind: tk,
                         col: self.current_col,
                     });
@@ -129,8 +126,8 @@ impl<'a> Lexer<'a> {
         // Then, it tries to unify each digit into one number and pushes it to a final token vector along with the operator.
         let mut grouped_tokens: Vec<Token> = vec![];
         let mut tokens_to_group: Vec<Token> = vec![];
-        for (i, token) in tokens.iter().enumerate() {
-            let tokens_to_eat = tokens.len() - i - 1;
+        for (i, token) in single_tokens.iter().enumerate() {
+            let tokens_to_eat = single_tokens.len() - i - 1;
             if tokens_to_eat == 0 {
                 // If no more tokens to add after this:
                 // 1. Add the final token to the stack if it is a:
@@ -176,65 +173,109 @@ impl<'a> Lexer<'a> {
         // Second pass:
         // Convert `num, period, num` into `num.num` (lex floating point).
         // Each (usize, usize) in `period_indices` is a pair of a index in `grouped_tokens` and the `col` in `self.src`.
-        let period_indices: Vec<(usize, usize)> = grouped_tokens
-            .iter()
-            .enumerate()
-            .filter_map(|p| {
-                if p.1.kind == TokenKind::Period {
-                    Some((p.0, p.1.col))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        let floating_points: Vec<Token> = period_indices
-            .iter()
-            .map(|(idx, col)| -> Result<Token> {
-                if *idx < 1 as usize || *idx > grouped_tokens.len() - 2 {
-                    Err(IncompleteFPError {
-                        src: NamedSource::new("mathexpr", self.src.to_owned()),
-                        err_span: {
-                            let start = SourceOffset::from_location(self.src, 1, *col + 1);
-                            SourceSpan::new(start, 1)
-                        },
-                    })?
-                }
+        // let period_indices: Vec<(usize, usize)> = grouped_tokens
+        //     .iter()
+        //     .enumerate()
+        //     .filter_map(|p| {
+        //         if p.1.kind == TokenKind::Period {
+        //             Some((p.0, p.1.col))
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .collect();
+        // let mut fp_idx_triplets = vec![];
+        // let floating_points: Vec<Token> = period_indices
+        //     .iter()
+        //     .map(|(idx, col)| -> Result<Token> {
+        //         if *idx < 1 as usize || *idx > grouped_tokens.len() - 2 {
+        //             Err(IncompleteFPError {
+        //                 src: NamedSource::new("mathexpr", self.src.to_owned()),
+        //                 err_span: {
+        //                     let start = SourceOffset::from_location(self.src, 1, *col + 1);
+        //                     SourceSpan::new(start, 1)
+        //                 },
+        //             })?
+        //         }
 
-                let (int, fract) = (
-                    // Because of the above `if`, this will never fail.
-                    grouped_tokens[idx - 1].clone(),
-                    grouped_tokens[idx + 1].clone(),
-                );
-                let number = match (int.kind, fract.kind) {
-                    (TokenKind::Numeric(Number(int)), TokenKind::Numeric(Number(fract))) => {
-                        int + fract / (10_f64.powf(fract.to_string().len() as f64))
+        //         let (int, fract) = (
+        //             // Because of the above `if`, this will never fail.
+        //             grouped_tokens[idx - 1].clone(),
+        //             grouped_tokens[idx + 1].clone(),
+        //         );
+        //         fp_idx_triplets.push((idx - 1, idx, idx + 1));
+        //         let number = match (int.kind, fract.kind) {
+        //             (TokenKind::Numeric(Number(int)), TokenKind::Numeric(Number(fract))) => {
+        //                 int + fract / (10_f64.powf(fract.to_string().len() as f64))
+        //             }
+        //             _ => Err(IncompleteFPError {
+        //                 src: NamedSource::new("mathexpr", self.src.to_owned()),
+        //                 err_span: {
+        //                     let start = SourceOffset::from_location(self.src, 1, *col + 1);
+        //                     SourceSpan::new(start, 1)
+        //                 },
+        //             })?,
+        //         };
+        //         Ok(Token {
+        //             kind: TokenKind::Numeric(Number(number)),
+        //             col: int.col,
+        //         })
+        //     })
+        //     .collect::<Result<Vec<Token>>>()?;
+        let tokens = {
+            let mut tokens_bind = vec![];
+            for window in grouped_tokens.windows(5) {
+                match &window[..] {
+                    [a, b, Token {
+                        kind: TokenKind::Period,
+                        ..
+                    }] => {
+                        tokens_bind.push(a.clone());
                     }
-                    _ => Err(IncompleteFPError {
-                        src: NamedSource::new("mathexpr", self.src.to_owned()),
-                        err_span: {
-                            let start = SourceOffset::from_location(self.src, 1, *col + 1);
-                            SourceSpan::new(start, 1)
-                        },
-                    })?,
-                };
-                Ok(Token {
-                    kind: TokenKind::Numeric(Number(number)),
-                    col: int.col,
-                })
-            })
-            .collect::<Result<Vec<Token>>>()?;
-        let tokens_with_fp: Vec<Token> = {
-            let mut pre_tokens = [floating_points, grouped_tokens].concat().to_vec();
-            pre_tokens
-                .iter_mut()
-                .filter(|t| pre_tokens.iter().filter(|pt| pt.col == t.col).count() == 1)
-                .collect::<Vec<Token>>();
-            let mut tokens: Vec<Token> = vec![];
-            tokens
-        };
+                    [a, Token {
+                        kind: TokenKind::Period,
+                        col,
+                    }, c] => {
+                        let (a, c) = match (a, c) {
+                            (
+                                Token {
+                                    kind: TokenKind::Numeric(Number(n_1)),
+                                    ..
+                                },
+                                Token {
+                                    kind: TokenKind::Numeric(Number(n_2)),
+                                    ..
+                                },
+                            ) => (n_1, n_2),
+                            _ => panic!(" "),
+                        };
+                        let fp = a + c / (10_f64.powf(c.to_string().len() as f64));
+                        let fp_tk = Token {
+                            kind: TokenKind::Numeric(Number(fp)),
+                            col: *col,
+                        };
+                        tokens_bind.push(fp_tk);
+                    }
+                    [Token {
+                        kind: TokenKind::Period,
+                        ..
+                    }, b, c] => {
+                        tokens_bind.push(c.clone());
+                    }
+                    [a, b, c] => {
+                        tokens_bind.push(a.clone());
+                        tokens_bind.push(b.clone());
+                        tokens_bind.push(c.clone());
+                    }
+                    _ => (),
+                }
+            }
 
-        Ok(floating_points)
+            tokens_bind
+        };
+        dbg!(tokens);
         // Ok(floating_points)
+        Ok(grouped_tokens)
     }
 
     fn tokenize_character(&mut self, character: char) -> Option<TokenKind> {
