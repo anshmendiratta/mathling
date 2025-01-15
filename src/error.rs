@@ -25,12 +25,12 @@ pub struct BadParenthesesError {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("Invalid operator here")]
+#[error("Incomplete instance of a floating point number")]
 #[diagnostic(
-    code("Invalid operators found during parsing"),
-    help("Try removing this")
+    code("Lone period found without both an integer and a fractional part"),
+    help("Try completing this")
 )]
-pub struct InvalidOperatorError {
+pub struct IncompleteFPError {
     #[source_code]
     pub src: NamedSource<String>,
     #[label("here")]
