@@ -135,6 +135,7 @@ impl<'a> Lexer<'a> {
     fn do_second_pass(&mut self, single_tokens: Vec<Token>) -> Result<Vec<Token>> {
         let mut grouped_tokens: Vec<Token> = vec![];
         let mut tokens_to_group: Vec<Token> = vec![];
+        let mut follows_period: bool = false;
         for (i, token) in single_tokens.iter().enumerate() {
             let tokens_to_eat = single_tokens.len() - i - 1;
             if tokens_to_eat == 0 {
@@ -146,7 +147,11 @@ impl<'a> Lexer<'a> {
                     tokens_to_group.push(token.clone());
                 }
                 if !tokens_to_group.is_empty() {
-                    let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                    let (mut grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                    if follows_period {
+                        grouped_number /= 10_f64.powf(tokens_to_group.len() as f64 - 1.0);
+                    }
+                    dbg!(grouped_number);
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
                         col: col_to_use,
@@ -163,9 +168,19 @@ impl<'a> Lexer<'a> {
                     kind: TokenKind::Numeric(_),
                     ..
                 } => tokens_to_group.push(token.clone()),
+                Token {
+                    kind: TokenKind::Period,
+                    ..
+                } => follows_period = true,
                 _ => {
                     if !tokens_to_group.is_empty() {
-                        let (grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                        let (mut grouped_number, col_to_use) =
+                            token_arr_to_number(&tokens_to_group);
+                        if follows_period {
+                            grouped_number /= 10_f64.powf(tokens_to_group.len() as f64 - 1.0);
+                            follows_period = false;
+                        }
+                        dbg!(grouped_number);
                         grouped_tokens.push(Token {
                             kind: TokenKind::Numeric(Number(grouped_number)),
                             col: col_to_use,
