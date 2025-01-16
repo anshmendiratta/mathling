@@ -89,13 +89,13 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn lex(&mut self) -> Result<Vec<Token>> {
-        let single_tokens = self.do_first_pass()?;
-        let grouped_number_tokens = self.do_second_pass(single_tokens)?;
-        let tokens_with_fp = self.do_third_pass(grouped_number_tokens)?;
+        let single_tokens = self.do_single_lexing_pass()?;
+        let grouped_number_tokens = self.do_token_grouping_pass(single_tokens)?;
+        let tokens_with_fp = self.do_fp_lexing_pass(grouped_number_tokens)?;
         Ok(tokens_with_fp)
     }
 
-    fn do_first_pass(&mut self) -> Result<Vec<Token>> {
+    fn do_single_lexing_pass(&mut self) -> Result<Vec<Token>> {
         let mut single_tokens: Vec<Token> = vec![];
 
         self.advance();
@@ -106,7 +106,6 @@ impl<'a> Lexer<'a> {
                     // Don't tokenize whitespaces.
                     if let TokenKind::Whitespace = tk {
                         self.advance();
-                        // self.current_col -= 1;
                         continue;
                     }
                     single_tokens.push(Token {
@@ -132,7 +131,7 @@ impl<'a> Lexer<'a> {
 
     /// Second pass:
     /// Group adjacent `Numbers` into a single one. Similar to the evaluation of RPN, this adds numbers to a vector until it reaches an operator or another token. Then, it tries to unify each digit into one number and pushes it to a final token vector along with the operator.
-    fn do_second_pass(&mut self, single_tokens: Vec<Token>) -> Result<Vec<Token>> {
+    fn do_token_grouping_pass(&mut self, single_tokens: Vec<Token>) -> Result<Vec<Token>> {
         let mut grouped_tokens: Vec<Token> = vec![];
         let mut tokens_to_group: Vec<Token> = vec![];
         let mut follows_period: bool = false;
@@ -204,7 +203,7 @@ impl<'a> Lexer<'a> {
 
     /// Second pass:
     /// Convert `num, period, num` into `num.num` (lex floating point).
-    fn do_third_pass(&mut self, grouped_tokens: Vec<Token>) -> Result<Vec<Token>> {
+    fn do_fp_lexing_pass(&mut self, grouped_tokens: Vec<Token>) -> Result<Vec<Token>> {
         let mut tokens = vec![];
         let mut fp_stack: Vec<Token> = vec![];
         let mut follows_period = false;
@@ -238,9 +237,7 @@ impl<'a> Lexer<'a> {
                             _ => panic!(" "),
                         };
                         let fp = Token {
-                            kind: TokenKind::Numeric(Number(
-                                int + fract, // / (10_f64.powf(fract.to_string().len() as f64)),
-                            )),
+                            kind: TokenKind::Numeric(Number(int + fract)),
                             col: col_to_use,
                         };
 
