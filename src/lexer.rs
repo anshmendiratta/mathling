@@ -149,9 +149,8 @@ impl<'a> Lexer<'a> {
                 if !tokens_to_group.is_empty() {
                     let (mut grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
                     if follows_period {
-                        grouped_number /= 10_f64.powf(tokens_to_group.len() as f64 - 1.0);
+                        grouped_number /= 10_f64.powf(tokens_to_group.len() as f64);
                     }
-                    dbg!(grouped_number);
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
                         col: col_to_use,
@@ -171,16 +170,24 @@ impl<'a> Lexer<'a> {
                 Token {
                     kind: TokenKind::Period,
                     ..
-                } => follows_period = true,
+                } => {
+                    follows_period = true;
+                    let (mut grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
+                    grouped_tokens.push(Token {
+                        kind: TokenKind::Numeric(Number(grouped_number)),
+                        col: col_to_use,
+                    });
+                    grouped_tokens.push(token.clone());
+                    tokens_to_group.clear();
+                }
                 _ => {
                     if !tokens_to_group.is_empty() {
                         let (mut grouped_number, col_to_use) =
                             token_arr_to_number(&tokens_to_group);
                         if follows_period {
-                            grouped_number /= 10_f64.powf(tokens_to_group.len() as f64 - 1.0);
+                            grouped_number /= 10_f64.powf(tokens_to_group.len() as f64);
                             follows_period = false;
                         }
-                        dbg!(grouped_number);
                         grouped_tokens.push(Token {
                             kind: TokenKind::Numeric(Number(grouped_number)),
                             col: col_to_use,
@@ -188,7 +195,6 @@ impl<'a> Lexer<'a> {
                     }
                     grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
-                    continue;
                 }
             }
         }
@@ -233,7 +239,7 @@ impl<'a> Lexer<'a> {
                         };
                         let fp = Token {
                             kind: TokenKind::Numeric(Number(
-                                int + fract / (10_f64.powf(fract.to_string().len() as f64)),
+                                int + fract, // / (10_f64.powf(fract.to_string().len() as f64)),
                             )),
                             col: col_to_use,
                         };
