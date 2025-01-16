@@ -33,7 +33,7 @@ impl<'a> Parser<'a> {
                         Token {
                             kind: TokenKind::Op(o_2),
                             ..
-                        } => o_2.has_greater_precedence_than(&o_1),
+                        } => o_2.has_greater_precedence_than(o_1),
                         Token {
                             kind: TokenKind::LeftParen,
                             ..
