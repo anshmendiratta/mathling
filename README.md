@@ -16,8 +16,8 @@ Currently supported syntax:
 - Division `/`
 
 ## Goals
-- [ ] Parse parentheses
+- [x] Floating point numbers as input
+- [x] Parse parentheses
 - [ ] Store variables
 - [ ] External links to custom functions
 - [ ] Command line configuration arguments (such as how many floating point decimals to print)
-- [ x ] Floating point numbers as input
