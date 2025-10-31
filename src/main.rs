@@ -22,11 +22,12 @@ fn main() -> Result<()> {
         module,
         builder: ctx.create_builder(),
     };
-    let lexer = Lexer::new(&expr);
-    let compiler = Compiler::new(&expr, codegen, lexer);
-    let output = compiler.run()?;
+    let mut lexer = Lexer::new(&expr);
+    lexer.lex();
+    // let compiler = Compiler::new(&expr, codegen, lexer);
+    // let output = compiler.run()?;
 
-    println!("Result: {}", output);
+    // println!("Result: {}", output);
 
     Ok(())
 }

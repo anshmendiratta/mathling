@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
 
         for token in self.tokens {
             match token.kind {
-                TokenKind::Numeric(_) => output_queue.push(token),
+                TokenKind::Numeric(_) | TokenKind::Identifier(_) => output_queue.push(token),
                 TokenKind::Op(ref o_1) => {
                     while operator_stack.last().is_some_and(|o_2| match o_2 {
                         Token {

@@ -1,21 +1,36 @@
-use miette::{NamedSource, Result, SourceOffset, SourceSpan};
+#[allow(unused_imports)]
+use std::{collections::HashMap, fmt::Write, ops::Range};
 
-use crate::{error::UnexpectedTokenError, token_arr_to_number};
+use miette::Result;
+use nom::{branch::alt, character::streaming::multispace0, Parser};
+
+use crate::{
+    alphabetical_arr_to_identifier, token_arr_to_number,
+    util::{find_assign, find_fp, find_op},
+    IResult, Span,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub col: usize,
+    pub column: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
+    // For values.
     LeftParen,
     RightParen,
     Numeric(Number),
     Whitespace,
     Period,
     Op(Operator),
+    // For parts of variables. Do not use directly in parser.
+    Alphabetical(char),
+    // For identifier.
+    Identifier(String),
+    Equal,
+    Semicolon, // To separate statements.
 }
 
 impl std::fmt::Display for TokenKind {
@@ -27,12 +42,28 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Whitespace => f.write_str(" "),
             TokenKind::Op(operator) => f.write_str(&operator.to_string()),
             TokenKind::Period => f.write_str("."),
+            TokenKind::Alphabetical(c) => f.write_char(*c),
+            TokenKind::Equal => f.write_str("="),
+            TokenKind::Semicolon => f.write_str(";"),
+            TokenKind::Identifier(id) => f.write_str(id),
         }
     }
 }
 
+impl Token {
+    pub fn kind(&self) -> TokenKind {
+        let Token { kind: k, .. } = self;
+        k.clone()
+    }
+
+    pub fn col(&self) -> usize {
+        let Token { column: c, .. } = self;
+        c.clone()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub struct Number(pub f64);
+pub struct Number(pub f32);
 
 impl std::fmt::Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -76,6 +107,8 @@ pub struct Lexer<'a> {
     current_token: Option<char>,
     current_col: usize,
     rest: &'a str,
+    // Keep track of assignments. Ignore order.
+    pub assignments: HashMap<String, Number>,
 }
 
 impl<'a> Lexer<'a> {
@@ -85,48 +118,50 @@ impl<'a> Lexer<'a> {
             current_token: None,
             current_col: 0,
             rest: expr_as_string,
+            assignments: HashMap::new(),
         }
     }
 
-    pub fn lex(&mut self) -> Result<Vec<Token>> {
-        let single_tokens = self.do_single_lexing_pass()?;
-        let grouped_number_tokens = self.do_token_grouping_pass(single_tokens)?;
-        let tokens_with_fp = self.do_fp_lexing_pass(grouped_number_tokens)?;
-        Ok(tokens_with_fp)
+    pub fn lex(&mut self) -> IResult<Vec<Token>> {
+        let (_, single_tokens) = self.do_single_lexing_pass()?;
+        // let (_, grouped_number_tokens) = self.do_token_grouping_pass(single_tokens)?;
+        // let tokens_with_fp = self.do_fp_lexing_pass(grouped_number_tokens)?;
+        // let tokens_with_assignment = self.assemble_statements_pass(tokens_with_fp)?;
+
+        // Ok(tokens_with_fp)
+        Ok(("", vec![]))
     }
 
-    fn do_single_lexing_pass(&mut self) -> Result<Vec<Token>> {
+    fn do_single_lexing_pass(&mut self) -> IResult<Vec<Token>> {
         let mut single_tokens: Vec<Token> = vec![];
+        let mut src_rest = self.src;
+        let mut column_idx = 0;
 
-        self.advance();
-        self.current_col = 0;
-        while self.current_token.is_some() {
-            match self.tokenize_character(self.current_token.unwrap()) {
-                Some(tk) => {
-                    // Don't tokenize whitespaces.
-                    if let TokenKind::Whitespace = tk {
-                        self.advance();
-                        continue;
-                    }
-                    single_tokens.push(Token {
-                        kind: tk,
-                        col: self.current_col,
-                    });
-                }
-                _ => {
-                    Err(UnexpectedTokenError {
-                        src: NamedSource::new("mathexpr", self.src.to_owned()),
-                        err_span: {
-                            let start = SourceOffset::from_location(self.src, 1, self.current_col);
-                            SourceSpan::new(start, 1)
-                        },
-                    })?;
-                }
-            };
-            self.advance();
+        while !src_rest.is_empty() {
+            let (src, spaces) = multispace0(src_rest)?;
+            let d = alt((find_fp, find_op, find_assign));
+            column_idx += spaces.len() + /* token_str */ 1;
+            // let token = match self.tokenize_character(number_tokens) {
+            //     Some(tkn) => single_tokens.push(Token {
+            //         kind: tkn,
+            //         column: column_idx,
+            //     }),
+            //     None => panic!(
+            //         "{:?}",
+            //         UnexpectedTokenError {
+            //             src: NamedSource::new("mathexpr", self.src.to_owned()),
+            //             err_span: {
+            //                 let start = SourceOffset::from_location(self.src, 1, self.current_col);
+            //                 SourceSpan::new(start, 1)
+            //             },
+            //         }
+            //     ),
+            // };
+            // dbg!(&single_tokens);
+            src_rest = src;
         }
 
-        Ok(single_tokens)
+        Ok((&Span::new(""), single_tokens))
     }
 
     /// Second pass:
@@ -148,11 +183,11 @@ impl<'a> Lexer<'a> {
                 if !tokens_to_group.is_empty() {
                     let (mut grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
                     if follows_period {
-                        grouped_number /= 10_f64.powf(tokens_to_group.len() as f64);
+                        grouped_number /= 10_f32.powf(tokens_to_group.len() as f32);
                     }
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
-                        col: col_to_use,
+                        column: col_to_use,
                     });
                 }
                 match token.kind {
@@ -174,7 +209,7 @@ impl<'a> Lexer<'a> {
                     let (mut grouped_number, col_to_use) = token_arr_to_number(&tokens_to_group);
                     grouped_tokens.push(Token {
                         kind: TokenKind::Numeric(Number(grouped_number)),
-                        col: col_to_use,
+                        column: col_to_use,
                     });
                     grouped_tokens.push(token.clone());
                     tokens_to_group.clear();
@@ -184,12 +219,12 @@ impl<'a> Lexer<'a> {
                         let (mut grouped_number, col_to_use) =
                             token_arr_to_number(&tokens_to_group);
                         if follows_period {
-                            grouped_number /= 10_f64.powf(tokens_to_group.len() as f64);
+                            grouped_number /= 10_f32.powf(tokens_to_group.len() as f32);
                             follows_period = false;
                         }
                         grouped_tokens.push(Token {
                             kind: TokenKind::Numeric(Number(grouped_number)),
-                            col: col_to_use,
+                            column: col_to_use,
                         });
                     }
                     grouped_tokens.push(token.clone());
@@ -229,7 +264,7 @@ impl<'a> Lexer<'a> {
                         let int = match fp_stack.pop() {
                             Some(Token {
                                 kind: TokenKind::Numeric(Number(int)),
-                                col,
+                                column: col,
                             }) => {
                                 col_to_use = col;
                                 int
@@ -238,7 +273,7 @@ impl<'a> Lexer<'a> {
                         };
                         let fp = Token {
                             kind: TokenKind::Numeric(Number(int + fract)),
-                            col: col_to_use,
+                            column: col_to_use,
                         };
 
                         tokens.append(&mut fp_stack);
@@ -263,12 +298,129 @@ impl<'a> Lexer<'a> {
         Ok(tokens)
     }
 
+    // Third pass: separate statements with `;` and store any assignment that are made. Finally, a stream of tokens is returned with the adjacent characters grouped into a single identifier.
+    // TODO(Ansh): Make it less ugly.
+    fn assemble_statements_pass(&mut self, fp_tokens: Vec<Token>) -> Result<Vec<Token>> {
+        // Find the indices of all the semicolons in the `fp_tokens`.
+        let mut semicolon_idxs: Vec<isize> = vec![-1];
+        semicolon_idxs.append(
+            &mut fp_tokens
+                .iter()
+                .enumerate()
+                .filter(|(_, t)| t.kind == TokenKind::Semicolon)
+                .map(|(idx, _)| idx as isize)
+                .collect(),
+        );
+
+        // Find and verify all the ranges of indices in `fp_tokens` that are assignments. All ranges are inclusive.
+        let mut assignment_ranges: Vec<Range<isize>> = Vec::new();
+        for window in semicolon_idxs.windows(2) {
+            // This is ugly. I'd rather just do `for [a, b] in semicolon_idxs...` instead of pattern matching with the if-let and introducing another indentation level.
+            if let [a, b] = window {
+                let tokens_in_range: Vec<Token> = ((*a + 1)..*b)
+                    .into_iter()
+                    .map(|x| fp_tokens[x as usize].clone())
+                    .collect();
+                let has_equal_token = tokens_in_range
+                    .iter()
+                    .map(|t| t.kind.clone())
+                    .collect::<Vec<TokenKind>>()
+                    .contains(&TokenKind::Equal);
+
+                if has_equal_token {
+                    assignment_ranges.push((*a + 1)..(*b));
+                }
+            }
+        }
+
+        for assignment_range in &assignment_ranges {
+            let assignment_tokens: Vec<Token> = assignment_range
+                .clone()
+                .map(|i| fp_tokens[i as usize].clone())
+                .collect();
+            let equal_idx = assignment_tokens
+                .iter()
+                .position(|e| e.kind == TokenKind::Equal)
+                .expect("LEXER: Incorrectly determined an assignment range.");
+            let identifier_tokens = &assignment_tokens[0..equal_idx];
+            let value_tokens = &assignment_tokens[(equal_idx + 1 as usize)..];
+            // Check that all the tokens used for the identifier are alphabetical.
+            assert!(
+                identifier_tokens
+                    .iter()
+                    .filter(|t| {
+                        if let TokenKind::Alphabetical(_) = t.kind {
+                            return true;
+                        }
+                        return false;
+                    })
+                    .collect::<Vec<_>>()
+                    .len()
+                    == identifier_tokens.len()
+            );
+            let identifier = identifier_tokens
+                .iter()
+                .map(|t| {
+                    if let TokenKind::Alphabetical(c) = t.kind {
+                        c.to_string()
+                    } else {
+                        panic!("LEXER: Found non-character in identifier in assignment.");
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("");
+            let value = Number(token_arr_to_number(value_tokens).0);
+
+            // Add assignment
+            dbg!(&identifier, &value);
+            self.assignments.insert(identifier, value);
+            // Delete assignment tokens from the return so the parser is unchanged.
+            // tokens.retain(|t| !assignment_tokens.contains(t) && t.kind != TokenKind::Semicolon)
+        }
+
+        // Tokens to return.
+        let mut tokens = vec![];
+        // Look at just the expression to evaluate.
+        let mut last_semicolon_idx = 0;
+        if let Some(last_assignment_range) = assignment_ranges.last() {
+            last_semicolon_idx = last_assignment_range.end;
+        }
+        // Iterate over the last statement.
+        let mut alphabetical_queue: Vec<Token> = vec![];
+        for token in &fp_tokens[(last_semicolon_idx as usize + 1)..] {
+            match token.kind {
+                TokenKind::Alphabetical(_) => {
+                    alphabetical_queue.push(token.clone());
+                }
+                _ => {
+                    if !alphabetical_queue.is_empty() {
+                        let identifier_token = alphabetical_arr_to_identifier(&alphabetical_queue);
+                        tokens.push(identifier_token);
+                        alphabetical_queue.clear();
+                    }
+
+                    // Push whatever non-identifier is the current iteration.
+                    tokens.push(token.clone());
+                }
+            }
+        }
+
+        // Clean up the queue in case the statement ends with an identifier.
+        if !alphabetical_queue.is_empty() {
+            let identifier_token = alphabetical_arr_to_identifier(&alphabetical_queue);
+            tokens.push(identifier_token);
+            alphabetical_queue.clear();
+        }
+
+        Ok(tokens)
+    }
+
     fn tokenize_character(&mut self, character: char) -> Option<TokenKind> {
         match character {
             '(' => Some(TokenKind::LeftParen),
             ')' => Some(TokenKind::RightParen),
             '0'..='9' => Some(TokenKind::Numeric(Number(
-                character.to_digit(10).unwrap() as f64
+                character.to_digit(10).unwrap() as f32
             ))),
             '+' => Some(TokenKind::Op(Operator::Plus)),
             '-' => Some(TokenKind::Op(Operator::Minus)),
@@ -276,6 +428,9 @@ impl<'a> Lexer<'a> {
             '/' => Some(TokenKind::Op(Operator::Slash)),
             ' ' => Some(TokenKind::Whitespace),
             '.' => Some(TokenKind::Period),
+            'a'..='z' | 'A'..='Z' => Some(TokenKind::Alphabetical(character)),
+            '=' => Some(TokenKind::Equal),
+            ';' => Some(TokenKind::Semicolon),
             _ => None,
         }
     }
@@ -298,5 +453,9 @@ impl<'a> Lexer<'a> {
 
     pub fn current_idx(&self) -> usize {
         self.current_col
+    }
+
+    pub fn assignments(&self) -> HashMap<String, Number> {
+        self.assignments.clone()
     }
 }

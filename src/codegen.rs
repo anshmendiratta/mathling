@@ -1,15 +1,7 @@
-use inkwell::{
-    builder::Builder,
-    context::Context,
-    execution_engine::{ExecutionEngine, JitFunction},
-    module::Module,
-};
-use miette::Result;
+use inkwell::{builder::Builder, context::Context, module::Module};
+use nom::IResult;
 
-use crate::{
-    lexer::{Lexer, Number, Operator, Token, TokenKind},
-    parse::Parser,
-};
+use crate::lexer::{Lexer, Number, Token};
 
 pub struct Compiler<'ctx> {
     codegen: CodeGen<'ctx>,
@@ -22,103 +14,125 @@ impl<'ctx> Compiler<'ctx> {
         Self { codegen, lexer }
     }
 
-    pub fn run(mut self) -> Result<Number> {
-        let lexed_tokens = self.lexer.lex()?;
-        let src = self.lexer.src();
-        let parser = Parser::new(&src, lexed_tokens);
-        let rpn_tokens = parser.parse_into_rpn()?;
+    pub fn run(mut self) -> IResult<Vec<Token>, Number> {
+        let lexed_tokens = self.lexer.lex().unwrap();
+        Ok((vec![], Number(1.0)))
+        // // let src = self.lexer.src();
+        // // let parser = Parser::new(&src, lexed_tokens);
+        // // let rpn_tokens = parser.parse_into_rpn()?;
 
-        self.codegen.compile_all_fns();
-        let execution_engine: ExecutionEngine<'ctx> = self
-            .codegen
-            .module
-            .create_jit_execution_engine(inkwell::OptimizationLevel::Aggressive)
-            .unwrap();
+        // self.codegen.compile_all_fns();
+        // let execution_engine: ExecutionEngine<'ctx> = self
+        //     .codegen
+        //     .module
+        //     .create_jit_execution_engine(inkwell::OptimizationLevel::Aggressive)
+        //     .unwrap();
 
-        type Function = unsafe extern "C" fn(f64, f64) -> f64;
-        // Need to get all functions here because doing so compiles the module. For some reason, you can not recompile the module after the first time.
-        let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
-            as JitFunction<'ctx, Function>;
-        let sub = { unsafe { execution_engine.get_function("sub").ok().unwrap() } }
-            as JitFunction<'ctx, Function>;
-        let mul = { unsafe { execution_engine.get_function("mul").ok().unwrap() } }
-            as JitFunction<'ctx, Function>;
-        let div = { unsafe { execution_engine.get_function("div").ok().unwrap() } }
-            as JitFunction<'ctx, Function>;
+        // type Function = unsafe extern "C" fn(f64, f64) -> f64;
+        // // Need to get all functions here because doing so compiles the module. For some reason, you can not recompile the module after the first time.
+        // let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
+        //     as JitFunction<'ctx, Function>;
+        // let sub = { unsafe { execution_engine.get_function("sub").ok().unwrap() } }
+        //     as JitFunction<'ctx, Function>;
+        // let mul = { unsafe { execution_engine.get_function("mul").ok().unwrap() } }
+        //     as JitFunction<'ctx, Function>;
+        // let div = { unsafe { execution_engine.get_function("div").ok().unwrap() } }
+        //     as JitFunction<'ctx, Function>;
 
-        let mut stack: Vec<Token> = vec![];
-        for token in rpn_tokens {
-            match token {
-                Token {
-                    kind: TokenKind::Numeric(ref n),
-                    ..
-                } => stack.push(token),
-                Token {
-                    kind: TokenKind::Op(op),
-                    ..
-                } => {
-                    // Made `mut` so they can be made into floats if the operator is division.
-                    let mut y = match stack.pop() {
-                        Some(Token {
-                            kind: TokenKind::Numeric(Number(n)),
-                            ..
-                        }) => n,
-                        _ => {
-                            panic!("Ill-formed expression.")
-                        }
-                    };
-                    let mut x = match stack.pop() {
-                        Some(Token {
-                            kind: TokenKind::Numeric(Number(n)),
-                            ..
-                        }) => n,
-                        _ => {
-                            panic!("Ill-formed expression.")
-                        }
-                    };
-                    match op {
-                        Operator::Plus => {
-                            let answer = unsafe { sum.call(x, y) };
-                            stack.push(Token {
-                                kind: TokenKind::Numeric(Number(answer)),
-                                col: token.col,
-                            });
-                        }
-                        Operator::Minus => {
-                            let answer = unsafe { sub.call(x, y) };
-                            stack.push(Token {
-                                kind: TokenKind::Numeric(Number(answer)),
-                                col: token.col,
-                            });
-                        }
-                        Operator::Asterisk => {
-                            let answer = unsafe { mul.call(x, y) };
-                            stack.push(Token {
-                                kind: TokenKind::Numeric(Number(answer)),
-                                col: token.col,
-                            });
-                        }
-                        Operator::Slash => {
-                            let answer = unsafe { div.call(x, y) };
-                            stack.push(Token {
-                                kind: TokenKind::Numeric(Number(answer)),
-                                col: token.col,
-                            });
-                        }
-                    }
-                }
-                _ => (),
-            }
-        }
+        // let mut stack: Vec<Token> = vec![];
+        // for token in rpn_tokens {
+        //     match token {
+        //         Token {
+        //             kind: TokenKind::Numeric(ref n),
+        //             ..
+        //         } => stack.push(token),
+        //         Token {
+        //             kind: TokenKind::Op(op),
+        //             ..
+        //         } => {
+        //             // Made `mut` so they can be made into floats if the operator is division.
+        //             let mut y = match stack.pop() {
+        //                 Some(Token {
+        //                     kind: TokenKind::Numeric(Number(n)),
+        //                     ..
+        //                 }) => n,
+        //                 Some(Token {
+        //                     kind: TokenKind::Identifier(id),
+        //                     ..
+        //                 }) => {
+        //                     let assignments = self.lexer.assignments();
+        //                     let Number(value) = assignments
+        //                         .get(&id)
+        //                         .expect("PARSER: Found identifier not used in assignments.");
 
-        assert!(stack.len() == 1, "Evaluator stack is not of length 1");
-        match stack.first().unwrap() {
-            Token {
-                kind: TokenKind::Numeric(ref n),
-                ..
-            } => Ok(n.clone()),
-            _ => panic!("Error: After eval, last token is NOT a number."),
-        }
+        //                     *value
+        //                 }
+        //                 _ => {
+        //                     panic!("Ill-formed expression.")
+        //                 }
+        //             };
+        //             let mut x = match stack.pop() {
+        //                 Some(Token {
+        //                     kind: TokenKind::Numeric(Number(n)),
+        //                     ..
+        //                 }) => n,
+        //                 Some(Token {
+        //                     kind: TokenKind::Identifier(id),
+        //                     ..
+        //                 }) => {
+        //                     let assignments = self.lexer.assignments();
+        //                     let Number(value) = assignments
+        //                         .get(&id)
+        //                         .expect("PARSER: Found undefined identifier.");
+        //                     *value
+        //                 }
+        //                 _ => {
+        //                     panic!("Ill-formed expression.")
+        //                 }
+        //             };
+        //             match op {
+        //                 Operator::Plus => {
+        //                     let answer = unsafe { sum.call(x, y) };
+        //                     stack.push(Token {
+        //                         kind: TokenKind::Numeric(Number(answer)),
+        //                         col: token.col,
+        //                     });
+        //                 }
+        //                 Operator::Minus => {
+        //                     let answer = unsafe { sub.call(x, y) };
+        //                     stack.push(Token {
+        //                         kind: TokenKind::Numeric(Number(answer)),
+        //                         col: token.col,
+        //                     });
+        //                 }
+        //                 Operator::Asterisk => {
+        //                     let answer = unsafe { mul.call(x, y) };
+        //                     stack.push(Token {
+        //                         kind: TokenKind::Numeric(Number(answer)),
+        //                         col: token.col,
+        //                     });
+        //                 }
+        //                 Operator::Slash => {
+        //                     let answer = unsafe { div.call(x, y) };
+        //                     stack.push(Token {
+        //                         kind: TokenKind::Numeric(Number(answer)),
+        //                         col: token.col,
+        //                     });
+        //                 }
+        //             }
+        //         }
+        //         _ => (),
+        //     }
+        // }
+
+        // assert!(stack.len() == 1, "Evaluator stack is not of length 1. Either all variables introduced were not used, or there exists an ill-formed expression.");
+        // match stack.first().unwrap() {
+        //     Token {
+        //         kind: TokenKind::Numeric(ref n),
+        //         ..
+        //     } => Ok(n.clone()),
+        //     _ => panic!("Error: After eval, last token is NOT a number."),
+        // }
     }
 }
 

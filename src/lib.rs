@@ -4,15 +4,22 @@
 
 use crate::lexer::Token;
 use lexer::{Number, TokenKind};
+use nom::error::Error;
+// use miette::Error;
+use nom_locate::LocatedSpan;
 
 pub mod codegen;
 pub mod error;
 pub mod lexer;
 pub mod parse;
+pub mod util;
 
-fn token_arr_to_number(numbers: &[Token]) -> (f64, usize) {
+type Span<'a> = LocatedSpan<&'a str>;
+pub type IResult<'a, O> = nom::IResult<&'a str, O, Error<&'a str>>;
+
+fn token_arr_to_number(numbers: &[Token]) -> (f32, usize) {
     assert!(!numbers.is_empty());
-    let first_col = numbers[0].col;
+    let first_col = numbers[0].column;
     let grouped_number = numbers
         .iter()
         .map(|t| {
@@ -27,7 +34,27 @@ fn token_arr_to_number(numbers: &[Token]) -> (f64, usize) {
             }
         })
         .enumerate()
-        .fold(0, |acc: i32, n: (usize, f64)| acc * 10 + n.1 as i32);
+        .fold(0, |acc: i32, n: (usize, f32)| acc * 10 + n.1 as i32);
 
-    (grouped_number as f64, first_col)
+    (grouped_number as f32, first_col)
+}
+
+fn alphabetical_arr_to_identifier(letters: &[Token]) -> Token {
+    let col_to_use = letters.first().unwrap().col();
+    let identifier = letters
+        .iter()
+        .map(|t| {
+            if let TokenKind::Alphabetical(c) = t.kind {
+                c.to_string()
+            } else {
+                unreachable!()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("");
+
+    Token {
+        kind: TokenKind::Identifier(identifier),
+        column: col_to_use,
+    }
 }
