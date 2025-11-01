@@ -38,8 +38,12 @@ pub fn find_fp(stream: Span) -> IResult<Expr> {
     Ok((rest, Expr::Value(fp)))
 }
 
-pub fn find_identifier(input: Span) -> IResult<Span> {
-    recognize(pair(many1(alpha1), alt((tag("_"), alpha0)))).parse(input)
+pub fn find_identifier(input: Span) -> IResult<Expr> {
+    map(
+        recognize(pair(many1(alpha1), alt((tag("_"), alpha0)))),
+        |(rest, id)| (rest, Expr::Id(id)),
+    )
+    .parse(input)?
 }
 
 pub fn find_identifier_expr(input: Span) -> IResult<Span> {
@@ -54,20 +58,29 @@ pub fn find_inside_expr(input: Span) -> IResult<Span> {
 }
 
 pub fn find_binop_expr(input: Span) -> IResult<Expr> {
+    let mut ws_op = delimited(space0, one_of("+-*/"), space0);
+    let (input, left) = is_not("+-*/ ").parse(input)?;
+    let (right, op) = ws_op.parse(input)?;
+
     if !input.contains("(") && !input.contains(")") {
-        let mut ws_op = delimited(space0, one_of("+-*/"), space0);
-        let (input, left) = is_not("+-*/ ").parse(input)?;
-        let (right, op) = ws_op.parse(input)?;
-        let op = match op {
-            '+' => BinOp::Plus,
-            '-' => BinOp::Minus,
-            '*' => BinOp::Times,
-            '/' => BinOp::Divide,
-        };
+        let (rest_l, id_l) = alt((find_identifier, find_fp)).parse(left)?;
+        let (rest_r, id_r) = find_identifier(right)?;
+        Ok((
+            Span::new(""),
+            Expr::BinOp(op, Box::new((Expr::Value(()), Expr::Value()))),
+        ));
     }
 
+    let mut ws_op = delimited(space0, one_of("+-*/"), space0);
+    let op = match op {
+        '+' => BinOp::Plus,
+        '-' => BinOp::Minus,
+        '*' => BinOp::Times,
+        '/' => BinOp::Divide,
+    };
+
     while (left.contains("(") && left.contains(")")) {
-        left = find_binop_expr(left);
+        (_, left) = find_binop_expr(left)?;
     }
     while (right.contains("(") && right.contains(")")) {
         right = find_binop_expr(right);
