@@ -1,96 +1,83 @@
-use miette::{NamedSource, Result, SourceOffset, SourceSpan};
+// use crate::{error::ParseError, lexer::BinOp, IResult, Span};
 
-use crate::{
-    error::BadParenthesesError,
-    lexer::{Number, Operator, Token, TokenKind},
-};
+// pub struct Parser<'a> {
+//     src: &'a str,
+//     tokens: Vec<Token>,
+// }
 
-struct Expression {
-    operands: (Number, Number),
-    operator: Operator,
-}
+// impl<'a> Parser<'a> {
+//     pub fn new(src: &'a str, tokens: Vec<Statement>) -> Self {
+//         Self { src, tokens }
+//     }
 
-pub struct Parser<'a> {
-    src: &'a str,
-    tokens: Vec<Token>,
-}
+//     /// Implements shunting yard: https://en.wikipedia.org/wiki/Shunting_yard_algorithm#The_algorithm_in_detail
+//     pub fn parse_into_rpn(self) -> IResult<'a, Vec<Token>> {
+//         let mut output_queue: Vec<Token> = vec![];
+//         let mut operator_stack: Vec<Token> = vec![];
 
-impl<'a> Parser<'a> {
-    pub fn new(src: &'a str, tokens: Vec<Token>) -> Self {
-        Self { src, tokens }
-    }
+//         for token in self.tokens {
+//             match token.kind {
+//                 TokenKind::Numeric(_) | TokenKind::Identifier(_) => output_queue.push(token),
+//                 TokenKind::Op(ref o_1) => {
+//                     while operator_stack.last().is_some_and(|o_2| match o_2 {
+//                         Token {
+//                             kind: TokenKind::Op(o_2),
+//                             ..
+//                         } => o_2.has_greater_precedence_than(o_1),
+//                         Token {
+//                             kind: TokenKind::LeftParen,
+//                             ..
+//                         } => false,
+//                         _ => panic!(""),
+//                     }) {
+//                         let o_2 = operator_stack.pop().unwrap();
+//                         output_queue.push(o_2);
+//                     }
 
-    /// Implements shunting yard: https://en.wikipedia.org/wiki/Shunting_yard_algorithm#The_algorithm_in_detail
-    pub fn parse_into_rpn(self) -> Result<Vec<Token>> {
-        let mut output_queue: Vec<Token> = vec![];
-        let mut operator_stack: Vec<Token> = vec![];
+//                     operator_stack.push(token);
+//                 }
+//                 TokenKind::LeftParen => operator_stack.push(token),
+//                 TokenKind::RightParen => {
+//                     while operator_stack
+//                         .last()
+//                         .is_some_and(|t| t.kind != TokenKind::LeftParen)
+//                     {
+//                         let last_op = operator_stack.pop().unwrap();
+//                         output_queue.push(last_op);
+//                     }
+//                     if operator_stack.is_empty() {
+//                         let op_msg = format!("{:?}", operator_stack);
+//                         return Err(nom::Err::Error(ParseError::new(
+//                             // Span::new(&op_msg),
+//                             Span::new(""),
+//                             String::from("Operator stack not empty."),
+//                         )));
+//                     }
 
-        for token in self.tokens {
-            match token.kind {
-                TokenKind::Numeric(_) | TokenKind::Identifier(_) => output_queue.push(token),
-                TokenKind::Op(ref o_1) => {
-                    while operator_stack.last().is_some_and(|o_2| match o_2 {
-                        Token {
-                            kind: TokenKind::Op(o_2),
-                            ..
-                        } => o_2.has_greater_precedence_than(o_1),
-                        Token {
-                            kind: TokenKind::LeftParen,
-                            ..
-                        } => false,
-                        _ => panic!(""),
-                    }) {
-                        let o_2 = operator_stack.pop().unwrap();
-                        output_queue.push(o_2);
-                    }
+//                     operator_stack.pop();
+//                 }
+//                 _ => {}
+//             }
+//         }
 
-                    operator_stack.push(token);
-                }
-                TokenKind::LeftParen => operator_stack.push(token),
-                TokenKind::RightParen => {
-                    while operator_stack
-                        .last()
-                        .is_some_and(|t| t.kind != TokenKind::LeftParen)
-                    {
-                        let last_op = operator_stack.pop().unwrap();
-                        output_queue.push(last_op);
-                    }
-                    if operator_stack.is_empty() {
-                        Err(BadParenthesesError {
-                            src: NamedSource::new("mathexpr", self.src.to_owned()),
-                            err_span: {
-                                let start = SourceOffset::from_location(self.src, 1, 1);
-                                SourceSpan::new(start, 1)
-                            },
-                        })?;
-                    }
+//         while !operator_stack.is_empty() {
+//             if operator_stack
+//                 .first()
+//                 .is_some_and(|t| t.kind == TokenKind::LeftParen || t.kind == TokenKind::RightParen)
+//             {
+//                 return Err(nom::Err::Error(ParseError::new(
+//                     // Span::new(&format!("{:?}", operator_stack)),
+//                     "".into(),
+//                     String::from("Unclosed parenthesis."),
+//                 )));
+//             }
+//             let last_op = operator_stack.pop().unwrap();
+//             output_queue.push(last_op);
+//         }
 
-                    operator_stack.pop();
-                }
-                _ => {}
-            }
-        }
+//         operator_stack.reverse();
+//         output_queue.append(&mut operator_stack);
 
-        while !operator_stack.is_empty() {
-            if operator_stack
-                .first()
-                .is_some_and(|t| t.kind == TokenKind::LeftParen || t.kind == TokenKind::RightParen)
-            {
-                Err(BadParenthesesError {
-                    src: NamedSource::new("mathexpr", self.src.to_owned()),
-                    err_span: {
-                        let start = SourceOffset::from_location(self.src, 1, 1);
-                        SourceSpan::new(start, 1)
-                    },
-                })?;
-            }
-            let last_op = operator_stack.pop().unwrap();
-            output_queue.push(last_op);
-        }
-
-        operator_stack.reverse();
-        output_queue.append(&mut operator_stack);
-
-        Ok(output_queue)
-    }
-}
+//         Ok((Span::new(""), output_queue))
+//     }
+// }
