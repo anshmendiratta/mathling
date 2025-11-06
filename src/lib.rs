@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use error::ParseError;
+use nom::{Input, Parser};
 use nom_locate::LocatedSpan;
 
 pub mod codegen;
@@ -13,6 +14,19 @@ pub mod util;
 
 type Span<'a> = LocatedSpan<&'a str>;
 pub type IResult<'a, O> = nom::IResult<Span<'a>, O, ParseError<'a>>;
+
+// impl<'a> Parser<dyn Input> for Span<'a> {
+//     type Output;
+
+//     type Error;
+
+//     fn process<OM: nom::OutputMode>(
+//         &mut self,
+//         input: _,
+//     ) -> nom::PResult<OM, _, Self::Output, Self::Error> {
+//         todo!()
+//     }
+// }
 
 // fn token_arr_to_number(numbers: &[Token]) -> (f32, usize) {
 //     assert!(!numbers.is_empty());
