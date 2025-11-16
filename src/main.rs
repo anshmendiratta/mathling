@@ -1,12 +1,6 @@
-use inkwell::context::Context;
-use miette::Result;
+use mathling::lexer::Lexer;
 
-use mathling::{
-    // codegen::{CodeGen, Compiler},
-    lexer::Lexer,
-};
-
-fn main() -> Result<()> {
+fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         panic!("usage: need a quoted math expression to evaluate");
@@ -23,11 +17,13 @@ fn main() -> Result<()> {
     //     builder: ctx.create_builder(),
     // };
     let mut lexer = Lexer::new(&expr);
-    let _ = lexer.lex();
+    let (_, statements) = lexer.lex().unwrap();
+    for statement in statements {
+        dbg!(statement);
+    }
+
     // let compiler = Compiler::new(&expr, codegen, lexer);
     // let output = compiler.run()?;
 
     // println!("Result: {}", output);
-
-    Ok(())
 }

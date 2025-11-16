@@ -1,32 +1,38 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use error::ParseError;
 use nom::{Input, Parser};
 use nom_locate::LocatedSpan;
 
+use crate::lexer::BinOp;
+
 pub mod codegen;
 pub mod error;
 pub mod lexer;
+pub mod math_lexing;
 pub mod parse;
 pub mod util;
 
 type Span<'a> = LocatedSpan<&'a str>;
 pub type IResult<'a, O> = nom::IResult<Span<'a>, O, ParseError<'a>>;
 
-// impl<'a> Parser<dyn Input> for Span<'a> {
-//     type Output;
+#[derive(Debug, Clone)]
+pub struct Token {
+    token_type: TokenType,
+    location_col: usize,
+}
 
-//     type Error;
-
-//     fn process<OM: nom::OutputMode>(
-//         &mut self,
-//         input: _,
-//     ) -> nom::PResult<OM, _, Self::Output, Self::Error> {
-//         todo!()
-//     }
-// }
+#[derive(Debug, Clone)]
+pub enum TokenType {
+    Fp(f32),
+    Id(String),
+    BinOp(BinOp),
+    LeftParen,
+    RightParen,
+}
 
 // fn token_arr_to_number(numbers: &[Token]) -> (f32, usize) {
 //     assert!(!numbers.is_empty());
