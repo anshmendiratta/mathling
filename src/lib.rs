@@ -14,6 +14,7 @@ pub mod error;
 pub mod lexer;
 pub mod math_lexing;
 pub mod parse;
+pub mod symbols;
 pub mod util;
 
 type Span<'a> = LocatedSpan<&'a str>;
@@ -32,6 +33,17 @@ pub enum TokenType {
     BinOp(BinOp),
     LeftParen,
     RightParen,
+}
+
+impl PartialEq for TokenType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Fp(l0), Self::Fp(r0)) => l0 == r0,
+            (Self::Id(l0), Self::Id(r0)) => l0 == r0,
+            (Self::BinOp(l0), Self::BinOp(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }
 
 // fn token_arr_to_number(numbers: &[Token]) -> (f32, usize) {

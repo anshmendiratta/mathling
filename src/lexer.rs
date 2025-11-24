@@ -15,6 +15,8 @@ use nom::{
     sequence::{delimited, separated_pair},
 };
 
+use crate::math_lexing::MathLexer;
+use crate::Token;
 use crate::{IResult, Span, error::ParseError, util::ws_tag};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,15 +53,14 @@ impl BinOp {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Assign(String, Expr),
-    Print(Expr),
+    Assign(String, Vec<Token>),
+    Print(Vec<Token>),
 }
 
 #[derive(Debug, Clone)]
 pub enum Expr {
     Value(f32),
     Id(String),
-    // BinOp(Box<(Expr, BinOp, Expr)>),
     BinOp(String),
 }
 
@@ -75,16 +76,16 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn lex(&'_ mut self) -> IResult<'_, Vec<Statement>> {
-        let (_, statements) = self.parse_all()?;
+    pub fn lex(mut self) -> IResult<'a, Vec<Statement>> {
+        let (_, statements) = self.lex_all()?;
         assert!(!statements.is_empty());
         Ok((Span::new(""), statements))
     }
 
-    fn parse_all(&'_ mut self) -> IResult<'_, Vec<Statement>> {
+    fn lex_all(mut self) -> IResult<'a, Vec<Statement>> {
         let (_, statements) = separated_list0(ws_tag(";"), is_not(";")).parse(self.src)?;
         let statements: Vec<Statement> = statements.iter().map(|st| {
-            let (_, res) = Lexer::parse_statement(*st).unwrap();
+            let (_, res) = Lexer::lex_statement(*st).unwrap();
             res
             }
                 ).collect();
@@ -92,7 +93,7 @@ impl<'a> Lexer<'a> {
         Ok((Span::new(""), statements))
     }
 
-    fn parse_statement(input: Span) -> IResult< Statement> {
+    fn lex_statement(input: Span) -> IResult< Statement> {
         assert!(!input.is_empty());
 
         if let Ok((input, (id, val))) =
@@ -100,17 +101,19 @@ impl<'a> Lexer<'a> {
         {
             let val = val.fragment();
             let id = id.fragment().to_string();
-            let (_, value_expr) = Lexer::parse_expr(Span::new(&val))?;
-            Ok((input, Statement::Assign(id, value_expr)))
+            let (_, value_expr) = Lexer::lex_expr(Span::new(&val))?;
+            let (_, tokens )= MathLexer::new(value_expr).lex()?;
+            Ok((input, Statement::Assign(id, tokens)))
         } else {
             let (_, input) = rest(input)?;
-            let (_, print_expr) = Lexer::parse_expr(input).unwrap();
-            Ok((input, Statement::Print(print_expr)))
+            let (_, print_expr) = Lexer::lex_expr(input).unwrap();
+            let (_, tokens )= MathLexer::new(print_expr).lex()?;
+            Ok((input, Statement::Print(tokens)))
         }
     }
 
     // TODO: handle recursion.
-    fn parse_expr(mut input: Span) -> IResult< Expr> {
+    fn lex_expr(mut input: Span) -> IResult< Expr> {
         if let Ok((input, val)) = digit1::<Span, ParseError>(input)
             && input.is_empty()
         {
@@ -129,7 +132,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn parse_op(&self, input: Span<'a>) -> BinOp {
+    fn lex_op(&self, input: Span<'a>) -> BinOp {
         match *input.fragment() {
             "+" => BinOp::Plus,
             "-" => BinOp::Minus,
