@@ -23,7 +23,7 @@ pub type IResult<'a, O> = nom::IResult<Span<'a>, O, ParseError<'a>>;
 #[derive(Debug, Clone)]
 pub struct Token {
     token_type: TokenType,
-    location_col: usize,
+    location_col: Option<usize>,
 }
 
 #[derive(Debug, Clone)]

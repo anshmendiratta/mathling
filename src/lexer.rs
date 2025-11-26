@@ -15,8 +15,8 @@ use nom::{
     sequence::{delimited, separated_pair},
 };
 
-use crate::math_lexing::MathLexer;
 use crate::Token;
+use crate::math_lexing::MathLexer;
 use crate::{IResult, Span, error::ParseError, util::ws_tag};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -84,16 +84,18 @@ impl<'a> Lexer<'a> {
 
     fn lex_all(mut self) -> IResult<'a, Vec<Statement>> {
         let (_, statements) = separated_list0(ws_tag(";"), is_not(";")).parse(self.src)?;
-        let statements: Vec<Statement> = statements.iter().map(|st| {
-            let (_, res) = Lexer::lex_statement(*st).unwrap();
-            res
-            }
-                ).collect();
+        let statements: Vec<Statement> = statements
+            .iter()
+            .map(|st| {
+                let (_, res) = Lexer::lex_statement(*st).unwrap();
+                res
+            })
+            .collect();
 
         Ok((Span::new(""), statements))
     }
 
-    fn lex_statement(input: Span) -> IResult< Statement> {
+    fn lex_statement(input: Span) -> IResult<Statement> {
         assert!(!input.is_empty());
 
         if let Ok((input, (id, val))) =
@@ -102,18 +104,18 @@ impl<'a> Lexer<'a> {
             let val = val.fragment();
             let id = id.fragment().to_string();
             let (_, value_expr) = Lexer::lex_expr(Span::new(&val))?;
-            let (_, tokens )= MathLexer::new(value_expr).lex()?;
+            let (_, tokens) = MathLexer::new(value_expr).lex()?;
             Ok((input, Statement::Assign(id, tokens)))
         } else {
             let (_, input) = rest(input)?;
             let (_, print_expr) = Lexer::lex_expr(input).unwrap();
-            let (_, tokens )= MathLexer::new(print_expr).lex()?;
+            let (_, tokens) = MathLexer::new(print_expr).lex()?;
             Ok((input, Statement::Print(tokens)))
         }
     }
 
     // TODO: handle recursion.
-    fn lex_expr(mut input: Span) -> IResult< Expr> {
+    fn lex_expr(mut input: Span) -> IResult<Expr> {
         if let Ok((input, val)) = digit1::<Span, ParseError>(input)
             && input.is_empty()
         {

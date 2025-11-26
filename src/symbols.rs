@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{lexer::Expr, math_lexing::MathLexer, Token};
+use crate::{Token, lexer::Expr, math_lexing::MathLexer};
 
 pub struct SymbolTable {
-    variables: HashMap<String, Vec<Token>>,
+    variables: HashMap<String, f32>,
 }
 
 impl SymbolTable {
@@ -13,16 +13,16 @@ impl SymbolTable {
         }
     }
 
-    pub fn lookup(&self, id: &str) -> Option<&Vec<Token>> {
+    pub fn lookup(&self, id: &str) -> Option<&f32> {
         self.variables.get(id)
     }
 
-    pub fn add(&mut self, id: &str, val: Vec<Token>) {
+    pub fn add(&mut self, id: &str, val: f32) {
         self.variables.insert(id.to_owned(), val);
     }
 
-    pub fn eval_symbol(&mut self, id: &str) -> Option<f32> {
-        let symbol_expr = self.lookup(id);
-        // if let
-    }
+    // pub fn eval_symbol(&mut self, id: &str) -> Option<f32> {
+    //     let symbol_expr = self.lookup(id);
+    //     // if let
+    // }
 }

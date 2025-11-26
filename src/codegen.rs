@@ -4,8 +4,8 @@ use crate::{Span, Token, TokenType};
 use inkwell::execution_engine::{ExecutionEngine, JitFunction};
 use inkwell::{builder::Builder, context::Context, module::Module};
 
-use crate::lexer::Lexer;
 use crate::IResult;
+use crate::lexer::{BinOp, Lexer};
 
 pub struct Compiler<'ctx> {
     codegen: CodeGen<'ctx>,
@@ -29,7 +29,7 @@ impl<'ctx> Compiler<'ctx> {
             .create_jit_execution_engine(inkwell::OptimizationLevel::Aggressive)
             .unwrap();
 
-        type Function = unsafe extern "C" fn(f64, f64) -> f64;
+        type Function = unsafe extern "C" fn(f32, f32) -> f32;
         // Need to get all functions here because doing so compiles the module. For some reason, you can not recompile the module after the first time.
         let sum = { unsafe { execution_engine.get_function("sum").ok().unwrap() } }
             as JitFunction<'ctx, Function>;
@@ -60,79 +60,75 @@ impl<'ctx> Compiler<'ctx> {
                         Some(Token {
                             token_type: TokenType::Id(id),
                             ..
-                        }) => {
-                            let val = var_symbol_table
-                                .lookup(&id)
-                                .expect("Found identifier not used in assignments.");
-
-                            *value
-                        }
+                        }) => *var_symbol_table
+                            .lookup(&id)
+                            .expect("Found identifier not used in assignments."),
                         _ => {
                             panic!("Ill-formed expression.")
                         }
                     };
                     let mut x = match stack.pop() {
                         Some(Token {
-                            token_type: TokenType::Numeric(Number(n)),
+                            token_type: TokenType::Fp(n),
                             ..
                         }) => n,
                         Some(Token {
-                            token_type: TokenType::Identifier(id),
+                            token_type: TokenType::Id(id),
                             ..
-                        }) => {
-                            let assignments = self.lexer.assignments();
-                            let Number(value) = assignments
-                                .get(&id)
-                                .expect("PARSER: Found undefined identifier.");
-                            *value
-                        }
+                        }) => *var_symbol_table
+                            .lookup(&id)
+                            .expect("Found identifier not used in assignments."),
                         _ => {
                             panic!("Ill-formed expression.")
                         }
                     };
                     match op {
-                        Operator::Plus => {
-                            let answer = unsafe { sum.call(x, y) };
+                        BinOp::Plus => {
+                            let result = unsafe { sum.call(x, y) };
                             stack.push(Token {
-                                token_type: TokenType::Numeric(Number(answer)),
-                                col: token.col,
+                                token_type: TokenType::Fp(result),
+                                location_col: None,
                             });
                         }
-                        Operator::Minus => {
-                            let answer = unsafe { sub.call(x, y) };
+                        BinOp::Minus => {
+                            let result = unsafe { sub.call(x, y) };
                             stack.push(Token {
-                                token_type: TokenType::Numeric(Number(answer)),
-                                col: token.col,
+                                token_type: TokenType::Fp(result),
+                                location_col: None,
                             });
                         }
-                        Operator::Asterisk => {
-                            let answer = unsafe { mul.call(x, y) };
+                        BinOp::Times => {
+                            let result = unsafe { mul.call(x, y) };
                             stack.push(Token {
-                                token_type: TokenType::Numeric(Number(answer)),
-                                col: token.col,
+                                token_type: TokenType::Fp(result),
+                                location_col: None,
                             });
                         }
-                        Operator::Slash => {
-                            let answer = unsafe { div.call(x, y) };
+                        BinOp::Divide => {
+                            let result = unsafe { div.call(x, y) };
                             stack.push(Token {
-                                token_type: TokenType::Numeric(Number(answer)),
-                                col: token.col,
+                                token_type: TokenType::Fp(result),
+                                location_col: None,
                             });
                         }
+                        BinOp::Equal => unreachable!(),
                     }
                 }
                 _ => (),
             }
         }
 
-        assert!(stack.len() == 1, "Evaluator stack is not of length 1. Either all variables introduced were not used, or there exists an ill-formed expression.");
+        assert!(
+            stack.len() == 1,
+            "Evaluator stack is not of length 1. Either all variables introduced were not used, or there exists an ill-formed expression."
+        );
         match stack.first().unwrap() {
             Token {
-                token_type: TokenType::Fp(ref n),
+                token_type: TokenType::Fp(n),
                 ..
-            } => Ok(n.clone()),
+            } => Ok::<_, ParseError>((Span::new(""), n)),
             _ => panic!("Error: After eval, last token is NOT a number."),
-        }
+        };
 
         Err(nom::Err::Error(ParseError::new(
             Span::new(""),
@@ -156,8 +152,8 @@ impl CodeGen<'_> {
     }
 
     pub fn compile_sum(&self) {
-        let f64_type = self.context.f64_type();
-        let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
+        let f32_type = self.context.f32_type();
+        let fn_type = f32_type.fn_type(&[f32_type.into(), f32_type.into()], false);
         let function = self.module.add_function("sum", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "add_entry");
 
@@ -175,8 +171,8 @@ impl CodeGen<'_> {
     }
 
     fn compile_sub(&self) {
-        let f64_type = self.context.f64_type();
-        let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
+        let f32_type = self.context.f32_type();
+        let fn_type = f32_type.fn_type(&[f32_type.into(), f32_type.into()], false);
         let function = self.module.add_function("sub", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "sub_entry");
 
@@ -194,8 +190,8 @@ impl CodeGen<'_> {
     }
 
     fn compile_mul(&self) {
-        let f64_type = self.context.f64_type();
-        let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
+        let f32_type = self.context.f32_type();
+        let fn_type = f32_type.fn_type(&[f32_type.into(), f32_type.into()], false);
         let function = self.module.add_function("mul", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "mul_entry");
 
@@ -213,8 +209,8 @@ impl CodeGen<'_> {
     }
 
     pub fn compile_div(&self) {
-        let f64_type = self.context.f64_type();
-        let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into()], false);
+        let f32_type = self.context.f32_type();
+        let fn_type = f32_type.fn_type(&[f32_type.into(), f32_type.into()], false);
         let function = self.module.add_function("div", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "div_entry");
 

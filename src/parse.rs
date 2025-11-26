@@ -1,6 +1,6 @@
 use crate::{
-    error::ParseError, lexer::Statement, math_lexing::MathLexer, symbols::SymbolTable, IResult,
-    Span, Token, TokenType,
+    IResult, Span, Token, TokenType, error::ParseError, lexer::Statement, math_lexing::MathLexer,
+    symbols::SymbolTable,
 };
 
 pub struct Parser {
