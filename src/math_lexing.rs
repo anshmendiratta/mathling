@@ -32,7 +32,7 @@ impl MathLexer {
                     Span::new(""),
                     vec![Token {
                         token_type: crate::TokenType::Fp(v),
-                        location_col: 0,
+                        location_col: None,
                     }],
                 ));
             }
@@ -41,7 +41,7 @@ impl MathLexer {
                     Span::new(""),
                     vec![Token {
                         token_type: crate::TokenType::Id(id),
-                        location_col: 0,
+                        location_col: None,
                     }],
                 ));
             }
@@ -67,7 +67,7 @@ impl MathLexer {
                     rest = input;
                     let val = Token {
                         token_type: crate::TokenType::Id(id.to_string()),
-                        location_col: input.location_offset() - id.to_string().len(),
+                        location_col: Some(input.location_offset() - id.to_string().len()),
                     };
                     tokens.push(val);
                 }
@@ -93,7 +93,7 @@ impl MathLexer {
                     rest = input;
                     let val = Token {
                         token_type: crate::TokenType::BinOp(op.clone()),
-                        location_col: input.location_offset() - op.to_string().len(),
+                        location_col: Some(input.location_offset() - op.to_string().len()),
                     };
                     tokens.push(val);
                 }
@@ -104,8 +104,10 @@ impl MathLexer {
                     rest = input;
                     let val = Token {
                         token_type: crate::TokenType::LeftParen,
-                        location_col: input.location_offset()
-                            - captures.first().unwrap_or(&Span::new("")).to_string().len(),
+                        location_col: Some(
+                            input.location_offset()
+                                - captures.first().unwrap_or(&Span::new("")).to_string().len(),
+                        ),
                     };
                     for _ in 0..captures.len() {
                         tokens.push(val.clone());
@@ -118,8 +120,10 @@ impl MathLexer {
                     rest = input;
                     let val = Token {
                         token_type: crate::TokenType::RightParen,
-                        location_col: input.location_offset()
-                            - captures.first().unwrap_or(&Span::new("")).to_string().len(),
+                        location_col: Some(
+                            input.location_offset()
+                                - captures.first().unwrap_or(&Span::new("")).to_string().len(),
+                        ),
                     };
                     for _ in 0..captures.len() {
                         tokens.push(val.clone());
@@ -146,7 +150,7 @@ impl MathLexer {
             rest,
             Token {
                 token_type: crate::TokenType::Fp(fp),
-                location_col: rest.location_offset() - fp.to_string().len(),
+                location_col: Some(rest.location_offset() - fp.to_string().len()),
             },
         ))
     }

@@ -13,7 +13,7 @@ fn main() {
     let expr = args[1].clone();
     assert!(!expr.is_empty(), "Expression cannot be empty.");
 
-    let mut lexer = Lexer::new(&expr);
+    let lexer = Lexer::new(&expr);
     let ctx = Context::create();
     let module = ctx.create_module("primary");
     let codegen = CodeGen {

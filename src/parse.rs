@@ -1,6 +1,6 @@
 use crate::{
-    IResult, Span, Token, TokenType, error::ParseError, lexer::Statement, math_lexing::MathLexer,
-    symbols::SymbolTable,
+    error::ParseError, lexer::Statement, math_lexing::MathLexer, symbols::SymbolTable, IResult,
+    Span, Token, TokenType,
 };
 
 pub struct Parser {
@@ -12,7 +12,7 @@ impl Parser {
         Self { statements: tokens }
     }
 
-    pub fn parse<'a>(mut self) -> IResult<'a, (Vec<Token>, SymbolTable)> {
+    pub fn parse<'a>(mut self) -> IResult<'a, (Vec<Token>, SymbolTable<Vec<Token>>)> {
         // Checks for at most one print.
         assert!(
             self.statements
