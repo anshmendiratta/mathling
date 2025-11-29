@@ -1,6 +1,6 @@
 use crate::{
-    error::ParseError, lexer::Statement, math_lexing::MathLexer, symbols::SymbolTable, IResult,
-    Span, Token, TokenType,
+    IResult, Span, Token, TokenType, error::ParseError, lexer::Statement, math_lexing::MathLexer,
+    symbols::SymbolTable,
 };
 
 pub struct Parser {
@@ -29,7 +29,8 @@ impl Parser {
         let mut symbol_table = SymbolTable::new();
         for statement in &self.statements {
             if let Statement::Assign(id, expr) = statement {
-                symbol_table.add(id, expr.clone());
+                let (_, rpn) = Parser::parse_into_rpn(expr.to_vec())?;
+                symbol_table.add(id, rpn);
             } else if let Statement::Print(print) = statement {
                 // Should only run once.
                 let (_, rpn) = Parser::parse_into_rpn(print.to_vec())?;

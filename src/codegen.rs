@@ -5,8 +5,8 @@ use crate::{Span, Token, TokenType};
 use inkwell::execution_engine::{ExecutionEngine, JitFunction};
 use inkwell::{builder::Builder, context::Context, module::Module};
 
-use crate::lexer::{BinOp, Expr, Lexer};
 use crate::IResult;
+use crate::lexer::{BinOp, Expr, Lexer};
 
 type Function = unsafe extern "C" fn(f32, f32) -> f32;
 

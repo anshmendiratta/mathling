@@ -1,16 +1,16 @@
-use std::collections::{hash_map::Iter, HashMap};
+use std::collections::{HashMap, hash_map::Iter};
 
 use crate::{
+    Token, TokenType,
     lexer::{BinOp, Expr},
     math_lexing::MathLexer,
-    Token, TokenType,
 };
 
 pub struct SymbolTable<O: Clone> {
     pub variables: HashMap<String, O>,
 }
 
-impl<O: Clone> SymbolTable<O> {
+impl<O: Clone + std::fmt::Debug> SymbolTable<O> {
     pub fn new() -> Self {
         Self {
             variables: HashMap::new(),
@@ -29,10 +29,9 @@ impl<O: Clone> SymbolTable<O> {
 impl SymbolTable<Vec<Token>> {
     pub fn simplify(&self) -> SymbolTable<f32> {
         let mut fp_symbol_table = SymbolTable::<f32>::new();
-
         for (id, tokens) in self.variables.clone() {
-            // let (_, tokens) = MathLexer::new(e).lex().unwrap();
             let mut stack: Vec<Token> = vec![];
+            dbg!(&tokens);
             for token in tokens {
                 match token {
                     Token {
@@ -93,9 +92,9 @@ impl SymbolTable<Vec<Token>> {
             }
 
             assert!(
-            stack.len() == 1,
-            "Evaluator stack is not of length 1. Either all variables introduced were not used, or there exists an ill-formed expression."
-        );
+                stack.len() == 1,
+                "Evaluator stack is not of length 1. There exists an ill-formed expression."
+            );
             match stack.first().unwrap() {
                 Token {
                     token_type: TokenType::Fp(n),

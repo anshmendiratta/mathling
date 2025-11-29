@@ -3,8 +3,10 @@
 use std::ops::Deref;
 use std::{collections::HashMap, fmt::Write, ops::Range};
 
-use nom::bytes::complete::is_not;
-use nom::multi::separated_list0;
+use nom::bytes::complete::{is_not, tag, take_until1};
+use nom::combinator::opt;
+use nom::multi::{many1, separated_list0};
+use nom::sequence::preceded;
 use nom::{
     Parser,
     branch::alt,
@@ -69,10 +71,10 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(expr_as_string: &'a str) -> Self {
-        assert!(!expr_as_string.is_empty());
+    pub fn new(src: &'a str) -> Self {
+        assert!(!src.is_empty());
         Self {
-            src: Span::new(expr_as_string),
+            src: Span::new(src),
         }
     }
 
@@ -98,15 +100,15 @@ impl<'a> Lexer<'a> {
     fn lex_statement(input: Span) -> IResult<Statement> {
         assert!(!input.is_empty());
 
-        if let Ok((input, (id, val))) =
-            separated_pair(alpha1::<Span, ParseError>, ws_tag("="), alphanumeric0).parse(input)
+        if let Ok((input, (id, remaining))) =
+            separated_pair(alpha1::<Span, ParseError>, ws_tag("="), rest).parse(input)
         {
-            let val = val.fragment();
-            let id = id.fragment().to_string();
-            let (_, value_expr) = Lexer::lex_expr(Span::new(&val))?;
+            // Assignment.
+            let (_, value_expr) = Lexer::lex_expr(remaining)?;
             let (_, tokens) = MathLexer::new(value_expr).lex()?;
-            Ok((input, Statement::Assign(id, tokens)))
+            Ok((input, Statement::Assign(id.to_string(), tokens)))
         } else {
+            // Print (final statement).
             let (_, input) = rest(input)?;
             let (_, print_expr) = Lexer::lex_expr(input).unwrap();
             let (_, tokens) = MathLexer::new(print_expr).lex()?;
@@ -114,23 +116,20 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    // TODO: handle recursion.
-    fn lex_expr(mut input: Span) -> IResult<Expr> {
+    // TODO: handle recursion and fp.
+    fn lex_expr(input: Span) -> IResult<Expr> {
         if let Ok((input, val)) = digit1::<Span, ParseError>(input)
             && input.is_empty()
         {
-            Ok((Span::new(""), Expr::Value(val.parse::<f32>().unwrap())))
+            // Is floating point.
+            Ok((Span::new(""), Expr::Value(input.parse::<f32>().unwrap())))
         } else if let Ok((input, id)) = alpha1::<Span, ParseError>(input)
             && input.is_empty()
         {
             Ok((Span::new(""), Expr::Id(id.to_string())))
         } else {
             // Assume binary operation.
-            Ok((
-                Span::new(""),
-                // Expr::BinOp(Box::new((l_expr, bin_op, r_expr))),
-                Expr::BinOp(input.to_string()),
-            ))
+            Ok((Span::new(""), Expr::BinOp(input.to_string())))
         }
     }
 

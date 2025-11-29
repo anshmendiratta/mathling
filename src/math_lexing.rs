@@ -1,4 +1,5 @@
 use nom::{
+    Parser,
     branch::alt,
     bytes::complete::is_a,
     character::complete::{alpha0, alpha1, digit1},
@@ -6,14 +7,13 @@ use nom::{
     error::Error,
     multi::many0,
     sequence::preceded,
-    Parser,
 };
 
 use crate::{
+    IResult, Span, Token, TokenType,
     error::ParseError,
     lexer::{BinOp, Expr},
     util::ws_tag,
-    IResult, Span, Token,
 };
 
 pub struct MathLexer {
@@ -149,7 +149,7 @@ impl MathLexer {
         Ok((
             rest,
             Token {
-                token_type: crate::TokenType::Fp(fp),
+                token_type: TokenType::Fp(fp),
                 location_col: Some(rest.location_offset() - fp.to_string().len()),
             },
         ))
