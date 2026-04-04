@@ -122,7 +122,7 @@ impl<'a> Lexer<'a> {
             && input.is_empty()
         {
             // Is floating point.
-            Ok((Span::new(""), Expr::Value(input.parse::<f32>().unwrap())))
+            Ok((Span::new(""), Expr::Value(val.parse::<f32>().unwrap())))
         } else if let Ok((input, id)) = alpha1::<Span, ParseError>(input)
             && input.is_empty()
         {

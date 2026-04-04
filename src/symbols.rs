@@ -31,7 +31,6 @@ impl SymbolTable<Vec<Token>> {
         let mut fp_symbol_table = SymbolTable::<f32>::new();
         for (id, tokens) in self.variables.clone() {
             let mut stack: Vec<Token> = vec![];
-            dbg!(&tokens);
             for token in tokens {
                 match token {
                     Token {
